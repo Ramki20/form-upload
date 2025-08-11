@@ -1,0 +1,327 @@
+Started by user SIVARAM.NATARAJ
+ > git rev-parse --resolve-git-dir /app/jenkins/caches/git-f0430b8f86da2c0193b4f35fa44226ba/.git # timeout=10
+Setting origin to https://bitbucket.fpac.usda.gov/scm/fls/ola-core-api-sb.git
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/fls/ola-core-api-sb.git # timeout=10
+Fetching origin...
+Fetching upstream changes from origin
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git config --get remote.origin.url # timeout=10
+ > git fetch --tags --force --progress -- origin +refs/heads/*:refs/remotes/origin/* # timeout=10
+Seen branch in repository origin/Connecticut-CoG-Fix
+Seen branch in repository origin/DEV
+Seen branch in repository origin/DEV2
+Seen branch in repository origin/PROD
+Seen branch in repository origin/Roger-25323-Other-9digit-validation
+Seen branch in repository origin/SPRINT-END
+Seen branch in repository origin/STRESS
+Seen branch in repository origin/UAT
+Seen branch in repository origin/devops
+Seen branch in repository origin/devops-ol2
+Seen branch in repository origin/fbp-integration2
+Seen branch in repository origin/feature/FLSS-22087-alm-503-duplicate-linking-requests-being-sent
+Seen branch in repository origin/feature/submission-timeout
+Seen branch in repository origin/flss-21402-tee-upload-doc
+Seen branch in repository origin/flss-21883-balance-sheet-upload-doc
+Seen branch in repository origin/flss-21884-field-not-saving
+Seen branch in repository origin/hotfix/cognito-tests
+Seen branch in repository origin/hotfix/new-fsa-2001
+Seen branch in repository origin/master
+Seen branch in repository origin/ola-core-nolan
+Seen 20 remote branches
+Obtained Jenkinsfile from ced1b5b4ce47bcefbb6924295c27a5d8b736fc49
+Loading library FLP-AWS-standard@master
+Attempting to resolve master from remote references...
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git ls-remote -h -- https://bitbucket.fpac.usda.gov/scm/flsp/flp-pipelines-aws-standard.git # timeout=10
+Found match: refs/heads/master revision 38f8bab87dc4b00fb82a9bfe9cf90aa2401cc247
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /app/jenkins/jobs/FLP/jobs/OLA - Online Loan Application/jobs/ola-core-api-sb/branches/DEV/workspace@libs/6f4dbd81869c6f63320ce05d88c8fd7d4ba1b50f5f4efc47ec6b7861dea1a940/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/flsp/flp-pipelines-aws-standard.git # timeout=10
+Fetching without tags
+Fetching upstream changes from https://bitbucket.fpac.usda.gov/scm/flsp/flp-pipelines-aws-standard.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git fetch --no-tags --force --progress -- https://bitbucket.fpac.usda.gov/scm/flsp/flp-pipelines-aws-standard.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Checking out Revision 38f8bab87dc4b00fb82a9bfe9cf90aa2401cc247 (master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 38f8bab87dc4b00fb82a9bfe9cf90aa2401cc247 # timeout=10
+Commit message: "Pull request #397: Gear groovy files and linting updates"
+ > git rev-list --no-walk 38f8bab87dc4b00fb82a9bfe9cf90aa2401cc247 # timeout=10
+Loading library FPAC-Common@refs/tags/2.1.0
+Attempting to resolve refs/tags/2.1.0 from remote references...
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git ls-remote -h -- https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git # timeout=10
+Could not find refs/tags/2.1.0 in remote references. Pulling heads to local for deep search...
+ > git rev-parse --resolve-git-dir /app/jenkins/caches/git-5bc3ae16cd67350492ccb68ce8ada7d4/.git # timeout=10
+Setting origin to https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git # timeout=10
+Fetching origin...
+Fetching upstream changes from origin
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git config --get remote.origin.url # timeout=10
+ > git fetch --tags --force --progress -- origin +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/tags/2.1.0^{commit} # timeout=10
+ > git branch -a -v --no-abbrev --contains 775f8d8b9aa968af69f55af150791fc05589aa74 # timeout=10
+Selected match: master revision 775f8d8b9aa968af69f55af150791fc05589aa74
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /app/jenkins/jobs/FLP/jobs/OLA - Online Loan Application/jobs/ola-core-api-sb/branches/DEV/workspace@libs/72b29439845867f3f60d076840b93d6cdce5ebc03f7da70629ee07fb67be7826/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git # timeout=10
+Fetching without tags
+Fetching upstream changes from https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git fetch --no-tags --force --progress -- https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-common.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Checking out Revision 775f8d8b9aa968af69f55af150791fc05589aa74 (master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 775f8d8b9aa968af69f55af150791fc05589aa74 # timeout=10
+Commit message: "Pull request #134: remove the leading ./ if it is on the xml report path value"
+ > git rev-list --no-walk 775f8d8b9aa968af69f55af150791fc05589aa74 # timeout=10
+Loading library FPAC-Standard@refs/tags/2.2.0
+Attempting to resolve refs/tags/2.2.0 from remote references...
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git ls-remote -h -- https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git # timeout=10
+Could not find refs/tags/2.2.0 in remote references. Pulling heads to local for deep search...
+ > git rev-parse --resolve-git-dir /app/jenkins/caches/git-53730811c5daae1d201e0400c7cd3bd1/.git # timeout=10
+Setting origin to https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git # timeout=10
+Fetching origin...
+Fetching upstream changes from origin
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git config --get remote.origin.url # timeout=10
+ > git fetch --tags --force --progress -- origin +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/tags/2.2.0^{commit} # timeout=10
+ > git branch -a -v --no-abbrev --contains c941aa8b858094c481893ac3f6d568012c627e92 # timeout=10
+Selected match: master revision c941aa8b858094c481893ac3f6d568012c627e92
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /app/jenkins/jobs/FLP/jobs/OLA - Online Loan Application/jobs/ola-core-api-sb/branches/DEV/workspace@libs/02d113510f33513d8cf399f27d2a8895121859d3bc0bd5799d5bb97f962ce255/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git # timeout=10
+Fetching without tags
+Fetching upstream changes from https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.43.5'
+ > git fetch --no-tags --force --progress -- https://bitbucket.fpac.usda.gov/scm/bcss/fpac-pipelines-fpac-standard.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Checking out Revision c941aa8b858094c481893ac3f6d568012c627e92 (master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f c941aa8b858094c481893ac3f6d568012c627e92 # timeout=10
+Commit message: "Pull request #105: Removed all references to the OWASP HTML report as we're not generating (or using it) anymore."
+ > git rev-list --no-walk c941aa8b858094c481893ac3f6d568012c627e92 # timeout=10
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /app/jenkins/jobs/FLP/jobs/OLA - Online Loan Application/jobs/ola-core-api-sb/branches/DEV/workspace
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] timeout
+Timeout set to expire in 1 hr 0 min
+[Pipeline] {
+[Pipeline] sendSplunkConsoleLog
+[Pipeline] {
+[Pipeline] timestamps
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Prepare)
+[Pipeline] echo
+[2025-08-11T19:50:16.140Z] In prepare stage
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+[2025-08-11T19:50:17.107Z] 
+[2025-08-11T19:50:17.107Z] =========================================================================
+[2025-08-11T19:50:17.107Z] Built with: FPAC-Standard refs/tags/2.2.0
+[2025-08-11T19:50:17.107Z]             FPAC-Common   refs/tags/2.1.0
+[2025-08-11T19:50:17.107Z] =========================================================================
+[2025-08-11T19:50:17.107Z] Starting pipeline 
+[2025-08-11T19:50:17.107Z]               projectName:  [ola-core-api]
+[2025-08-11T19:50:17.107Z]              dumpSettings:  [true]
+[2025-08-11T19:50:17.107Z]                 isRelease:  [false]
+[2025-08-11T19:50:17.107Z]                jdkVersion:  [java-17-amazon-corretto]
+[2025-08-11T19:50:17.107Z]            skipVersionMod:  [true]
+[2025-08-11T19:50:17.107Z]             doPreValidate:  [org.jenkinsci.plugins.workflow.cps.CpsClosure2@7bba90aa]
+[2025-08-11T19:50:17.107Z]            doPostValidate:  [org.jenkinsci.plugins.workflow.cps.CpsClosure2@43b9d022]
+[2025-08-11T19:50:17.107Z]              doPrePublish:  [org.jenkinsci.plugins.workflow.cps.CpsClosure2@74817b0c]
+[2025-08-11T19:50:17.107Z]             doPostPublish:  [org.jenkinsci.plugins.workflow.cps.CpsClosure2@15a23e42]
+[2025-08-11T19:50:17.107Z]                components:  [[gov.usda.fpac.common.component.FpacMavenComponent@3ab2c39c]]
+[2025-08-11T19:50:17.107Z] =========================================================================
+[2025-08-11T19:50:17.107Z] 
+[Pipeline] echo
+[2025-08-11T19:50:17.181Z] Looking for pipeline_configuration.json
+[Pipeline] configFileProvider
+[2025-08-11T19:50:17.195Z] provisioning config files...
+[2025-08-11T19:50:17.196Z] copy managed file [pipeline_configuration] to file:/app/jenkins/jobs/FLP/jobs/OLA%20-%20Online%20Loan%20Application/jobs/ola-core-api-sb/branches/DEV/workspace@tmp/config11967612291527110918tmp
+[Pipeline] {
+[Pipeline] readJSON
+[Pipeline] }
+[2025-08-11T19:50:17.315Z] Deleting 1 temporary files
+[Pipeline] // configFileProvider
+[Pipeline] echo
+[2025-08-11T19:50:17.392Z] Validated pipeline_configuration file
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Fetch Repo & Tag)
+Stage "Fetch Repo & Tag" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (ECR Login)
+Stage "ECR Login" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (App Build)
+Stage "App Build" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Sonar Scan)
+Stage "Sonar Scan" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (S3download)
+Stage "S3download" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Docker Build)
+Stage "Docker Build" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Push Image)
+Stage "Push Image" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy To AWS)
+Stage "Deploy To AWS" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Docker Prune)
+Stage "Docker Prune" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+[2025-08-11T19:50:18.540Z] Sending Email notification
+[Pipeline] emailext
+[2025-08-11T19:50:18.566Z] Sending email to: SM.FSA.FLS.OLA.DEV.CICD.deployments@usda.gov
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+[2025-08-11T19:51:18.721Z] Clean workspace
+[Pipeline] cleanWs
+[2025-08-11T19:51:18.737Z] [WS-CLEANUP] Deleting project workspace...
+[2025-08-11T19:51:18.737Z] [WS-CLEANUP] Deferred wipeout is disabled by the job configuration...
+[2025-08-11T19:51:18.737Z] [WS-CLEANUP] done
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // timestamps
+[Pipeline] }
+[Pipeline] // sendSplunkConsoleLog
+[Pipeline] }
+[Pipeline] // timeout
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Also:   org.jenkinsci.plugins.workflow.actions.ErrorAction$ErrorId: b7374c69-2431-46ed-a702-6c689ec01f83
+java.lang.Exception: [sonarMSBuildInstallationName]:  default value [null] not a valid value [SonarScanner-10.1.1-.NET]
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:83)
+	at org.codehaus.groovy.reflection.CachedConstructor.doConstructorInvoke(CachedConstructor.java:77)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrap.callConstructor(ConstructorSite.java:84)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallConstructor(CallSiteArray.java:59)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:238)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:250)
+	at gov.usda.fpac.common.configuration.setting.<init>(setting.groovy:13)
+	at jdk.internal.reflect.GeneratedConstructorAccessor1730.newInstance(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:481)
+	at org.codehaus.groovy.reflection.CachedConstructor.invoke(CachedConstructor.java:83)
+	at org.codehaus.groovy.runtime.callsite.ConstructorSite$ConstructorSiteNoUnwrapNoCoerce.callConstructor(ConstructorSite.java:105)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallConstructor(CallSiteArray.java:59)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callConstructor(AbstractCallSite.java:238)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.sandbox.DefaultInvoker.constructorCall(DefaultInvoker.java:25)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.LoggingInvoker.constructorCall(LoggingInvoker.java:123)
+	at gov.usda.fpac.common.configuration.fpacSettings.addSetting(fpacSettings.groovy:523)
+	at gov.usda.fpac.common.configuration.fpacSettings.init(fpacSettings.groovy:348)
+	at gov.usda.fpac.common.configuration.fpacSettings.init(fpacSettings.groovy)
+	at gov.usda.fpac.common.configuration.fpacSettings.create(fpacSettings.groovy:512)
+	at gov.usda.fpac.common.configuration.fpacSettings.create(fpacSettings.groovy)
+	at FpacInit.setupSettings(FpacInit.groovy:23)
+	at FpacInit.call(FpacInit.groovy:9)
+	at WorkflowScript.run(WorkflowScript:70)
+	at ___cps.transform___(Native Method)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.FunctionCallBlock$ContinuationImpl.dispatchOrArg(FunctionCallBlock.java:100)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.FunctionCallBlock$ContinuationImpl.fixArg(FunctionCallBlock.java:85)
+	at jdk.internal.reflect.GeneratedMethodAccessor635.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.ContinuationPtr$ContinuationImpl.receive(ContinuationPtr.java:72)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.LocalVariableBlock$LocalVariable.get(LocalVariableBlock.java:39)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.LValueBlock$GetAdapter.receive(LValueBlock.java:30)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.LocalVariableBlock.evalLValue(LocalVariableBlock.java:28)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.LValueBlock$BlockImpl.eval(LValueBlock.java:55)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.LValueBlock.eval(LValueBlock.java:16)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.Next.step(Next.java:83)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.Continuable.run0(Continuable.java:147)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.SandboxContinuable.access$001(SandboxContinuable.java:17)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.SandboxContinuable.run0(SandboxContinuable.java:49)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThread.runNextChunk(CpsThread.java:180)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup.run(CpsThreadGroup.java:422)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup$2.call(CpsThreadGroup.java:330)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup$2.call(CpsThreadGroup.java:294)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService.lambda$wrap$4(CpsVmExecutorService.java:140)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at hudson.remoting.SingleLaneExecutorService$1.run(SingleLaneExecutorService.java:139)
+	at jenkins.util.ContextResettingExecutorService$1.run(ContextResettingExecutorService.java:28)
+	at jenkins.security.ImpersonatingExecutorService$1.run(ImpersonatingExecutorService.java:68)
+	at jenkins.util.ErrorLoggingExecutorService.lambda$wrap$0(ErrorLoggingExecutorService.java:51)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService$1.call(CpsVmExecutorService.java:53)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService$1.call(CpsVmExecutorService.java:50)
+	at org.codehaus.groovy.runtime.GroovyCategorySupport$ThreadCategoryInfo.use(GroovyCategorySupport.java:136)
+	at org.codehaus.groovy.runtime.GroovyCategorySupport.use(GroovyCategorySupport.java:275)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService.lambda$categoryThreadFactory$0(CpsVmExecutorService.java:50)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Finished: FAILURE
