@@ -120,6 +120,23 @@ class PersonServiceClientTest {
         assertEquals(Boolean.FALSE, result);
         verify(restTemplate).getForEntity(expectedUrl, HealthCheck.class);
     }
+	
+	@Test
+    void testIsHealthy_ResponseNotNullButBodyNull() {
+        // Arrange
+        String expectedUrl = personBaseUrl + "/isHealthy";
+        // Create ResponseEntity with non-null response but null body
+        ResponseEntity<HealthCheck> responseEntity = new ResponseEntity<>(null, HttpStatus.OK);
+
+        when(restTemplate.getForEntity(expectedUrl, HealthCheck.class)).thenReturn(responseEntity);
+
+        // Act
+        boolean result = personServiceClient.isHealthy();
+
+        // Assert
+        assertEquals(Boolean.FALSE, result);
+        verify(restTemplate).getForEntity(expectedUrl, HealthCheck.class);
+    }	
 
     // Tests for getPersonsByEauthIds() method
     @Test
