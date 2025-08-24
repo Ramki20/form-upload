@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+			http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd 
+			http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.5.xsd">
+
+	<context:component-scan base-package="gov.usda.fsa.fcao.flp.flpids.common" />
+	<!-- Farm Records Web Service - START -->
+	 <bean id="farmRecordsProxy" lazy-init="true"
+          class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.FarmRecordBS">
+          <property name="farmRecordsServiceBean" ref="farmRecordsServiceBean"/>
+     </bean>
+     <bean id="disbursementProxy" lazy-init="true"
+     	class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.DisbursementBS">
+     </bean>
+     
+     <bean id="nrrsReceivableBS" lazy-init="true" class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.NRRSReceivableBS"/>
+     <bean id="nrrsCollectionBS" lazy-init="true" class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.NRRSCollectionBS"/>
+       
+      <bean id="agencyTokenBuilder"
+            class="gov.usda.fsa.fcao.flp.flpids.common.utilities.InternalAgencyToken">
+      </bean>
+      <bean id="agencyTokenFactory" factory-bean="agencyTokenBuilder"
+            factory-method="getAgencyToken" />  
+            
+      <bean name="farmRecordsServiceType" lazy-init="true" scope="singleton" class="java.lang.String">
+            <constructor-arg value="gov/usda/fsa/common/frs_service_specifier"/>
+      </bean>
+      <bean id="farmRecordsServiceBean" lazy-init="true"
+          class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="staticMethod"
+                  value="gov.usda.fsa.parmo.frs.client.factory.FarmRecordsServiceFactory.createService"/>
+        <property name="arguments">
+            <list>
+                 <ref bean="agencyTokenFactory" />
+                 <ref bean="farmRecordsServiceType"/> 
+            </list>
+        </property>
+    </bean> 
+    <bean id="escoapTransactionBS" lazy-init="true"
+     	class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.ESCOAPTransactionBS">
+     </bean> 
+	
+</beans>
