@@ -11,15 +11,18 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.Assert;
 
 import gov.usda.fsa.common.base.AgencyToken;
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.BusinessObjectBase;
 import gov.usda.fsa.fcao.flp.flpids.common.business.types.DeleteCodeType;
 import gov.usda.fsa.fcao.flp.flpids.common.dao.dao.IDLSPreparedStatementSetter;
+import gov.usda.fsa.fcao.flp.flpids.common.dao.dao.util.DAOUtil;
 import gov.usda.fsa.fcao.flp.flpids.common.exceptions.DLSDataNotFoundException;
 import gov.usda.fsa.fcao.flp.flpids.common.exceptions.DLSPersistenceFatalException;
 
@@ -68,9 +71,9 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 			 * status code.
 			 */
 			setDataStatusCodeParameters(referenceBO, paramSource);
-
-			domainObjects = this.getNamedParameterJdbcTemplate().query(
-					sqlStatement, paramSource, rowMapper);
+			
+			NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
+			domainObjects =   jdbcTemplate.query(sqlStatement, paramSource, rowMapper);
 
 		} catch (DataAccessException ex) {
 			StringBuilder sb = new StringBuilder();
@@ -97,8 +100,10 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 		List<BO> domainObjects = new ArrayList<BO>();
 
 		try {
-			domainObjects = getJdbcTemplate().query(
-					setter.buildSQLStatement(baseSQLQuery), setter, rowMapper);
+			
+			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+			domainObjects = jdbcTemplate.query(setter.buildSQLStatement(baseSQLQuery), setter, rowMapper);
+			
 		} catch (DataAccessException ex) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("DLSSimpleJdbcDaoSupport.retrieve(): DataAccessException caught, convert and throw: [");
@@ -120,8 +125,10 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 			for (int index = 0; index < ids.size(); index++) {
 				args[index] = ids.get(index);
 			}
-			domainObjects = getJdbcTemplate().query(retrieveSql, args,
-					rowMapper);
+			
+			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+			domainObjects = jdbcTemplate.query(retrieveSql, args, rowMapper);
+			
 		} catch (DataAccessException e) {
 			msg = "DLSSimpleJdbcDaoSupport.retrieve(): DataAccessException caught, convert and throw: ["
 					+ e + "]";
@@ -145,9 +152,9 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 			 * status code.
 			 */
 			setDataStatusCodeParameters(referenceBO, paramSource);
-
-			domainObject = (BO) this.getNamedParameterJdbcTemplate()
-					.queryForObject(sqlStatement, paramSource, rowMapper);
+			
+			NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
+			domainObject = (BO) jdbcTemplate.queryForObject(sqlStatement, paramSource, rowMapper);
 
 		} catch (EmptyResultDataAccessException ex) {
 			if (logger.isDebugEnabled()) {
@@ -175,7 +182,7 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 		List<Object> dummyIds = new ArrayList<Object>();
 		return dummyIds;
 	}
-
+	
 	/**
 	 * Return SQL Statement using the passed key value.<br>
 	 * <br>

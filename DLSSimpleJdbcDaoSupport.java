@@ -1,6 +1,7 @@
 package gov.usda.fsa.fcao.flp.flpids.common.dao.impl.base;
 
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.BusinessObjectBase;
+import gov.usda.fsa.fcao.flp.flpids.common.dao.dao.util.DAOUtil;
 import gov.usda.fsa.fcao.flp.flpids.common.exceptions.DLSPersistenceFatalException;
 import gov.usda.fsa.fcao.flp.flpids.common.exceptions.DLSPersistenceOptimisticLockStopException;
 
@@ -10,7 +11,9 @@ import java.util.Map;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -49,12 +52,8 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
 			
-	        if (this.getNamedParameterJdbcTemplate() == null) {
-	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
-	        }			
-			
-			rc = this.getNamedParameterJdbcTemplate().update(sql,
-					localParamSource, generatedKeyHolder);
+			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+			rc = jdbcTemplate.update(sql, localParamSource, generatedKeyHolder);
 			if (rc == 1) {
 				try {
 					if (generatedKeyHolder.getKey() != null) {
@@ -95,77 +94,53 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 		doUpdate(sql,domainObject);
 	}
 	
-	protected void doUpdate(String sql, BO domainObject)
-			throws DLSPersistenceFatalException,
-			DLSPersistenceOptimisticLockStopException {
-		int rc = -1;
-		String msg = "";
-		try {
-			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
-					domainObject);
-			
-	        if (this.getNamedParameterJdbcTemplate() == null) {
-	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
-	        }
+	// Common method to handle update/delete operations (eliminates code duplication)
+	private int executeUpdateOperation(String sql, BO domainObject, String operationType) 
+	        throws DLSPersistenceFatalException {
+	    int rc = -1;
+	    String msg = "";
+	    try {
+	        SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
+	                domainObject);
 	        
-			rc = this.getNamedParameterJdbcTemplate().update(sql,
-					localParamSource);
-		} catch (DataAccessException hbEx) {
-			msg = "DLSSimpleJdbcDaoSupport.update(): DataAccessException caught, convert and throw: ["
-					+ hbEx + "]";
-			logger.error(msg);
-			throw new DLSPersistenceFatalException(msg, hbEx);
-		} catch (Exception exc) {
-			msg = "DLSSimpleJdbcDaoSupport.update(): Exception caught, convert and throw: ["
-					+ exc + "]";
-			logger.error(msg);
-			throw new DLSPersistenceFatalException(msg, exc);
-		}
-
-		if (rc == 0 && isTreatUpdateCountZeroAsPersistenceOptimisticLockStopException()) {
-			msg = "DLSSimpleJdbcDaoSupport.update(): optimistic lock on record exists";
-			throw new DLSPersistenceOptimisticLockStopException(msg);
-		}
-
+			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+	        rc = jdbcTemplate.update(sql, localParamSource);
+	    } catch (DataAccessException hbEx) {
+	        msg = "DLSSimpleJdbcDaoSupport." + operationType + "(): DataAccessException caught, convert and throw: ["
+	                + hbEx + "]";
+	        logger.error(msg);
+	        throw new DLSPersistenceFatalException(msg, hbEx);
+	    } catch (Exception exc) {
+	        msg = "DLSSimpleJdbcDaoSupport." + operationType + "(): Exception caught, convert and throw: ["
+	                + exc + "]";
+	        logger.error(msg);
+	        throw new DLSPersistenceFatalException(msg, exc);
+	    }
+	    return rc;
 	}
 
-	/**
-	 * @param sql
-	 * @param domainObject
-	 * @throws DLSPersistenceFatalException
-	 * @throws DLSPersistenceOptimisticLockStopException
-	 */
+	protected void doUpdate(String sql, BO domainObject)
+	        throws DLSPersistenceFatalException,
+	        DLSPersistenceOptimisticLockStopException {
+	    
+	    int rc = executeUpdateOperation(sql, domainObject, "update");
+	    
+	    if (rc == 0 && isTreatUpdateCountZeroAsPersistenceOptimisticLockStopException()) {
+	        String msg = "DLSSimpleJdbcDaoSupport.update(): optimistic lock on record exists";
+	        throw new DLSPersistenceOptimisticLockStopException(msg);
+	    }
+	}
+
 	protected void delete(String sql, BO domainObject)
-			throws DLSPersistenceFatalException, DLSPersistenceOptimisticLockStopException {
-		int rc = -1;
-		String msg = "";
-		try {
-			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
-					domainObject);
-			
-	        if (this.getNamedParameterJdbcTemplate() == null) {
-	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
-	        }			
-			
-			rc = this.getNamedParameterJdbcTemplate().update(sql,
-					localParamSource);
-		} catch (DataAccessException hbEx) {
-			msg = "DLSSimpleJdbcDaoSupport.delete(): DLSSimpleJdbcDaoSupport caught, convert and throw: ["
-					+ hbEx + "]";
-			logger.error(msg);
-			throw new DLSPersistenceFatalException(msg, hbEx);
-		} catch (Exception exc) {
-			msg = "DLSSimpleJdbcDaoSupport.delete(): Exception caught, convert and throw: ["
-					+ exc + "]";
-			logger.error(msg);
-			throw new DLSPersistenceFatalException(msg, exc);
-		}
-
-		if (rc == 0 && isTreatUpdateCountZeroAsPersistenceOptimisticLockStopException()) {
-			msg = "DLSSimpleJdbcDaoSupport.delete(): record not deleted";
-			throw new DLSPersistenceOptimisticLockStopException(msg);
-		}
-	}
+	        throws DLSPersistenceFatalException, DLSPersistenceOptimisticLockStopException {
+	    
+	    int rc = executeUpdateOperation(sql, domainObject, "delete");
+	    
+	    if (rc == 0 && isTreatUpdateCountZeroAsPersistenceOptimisticLockStopException()) {
+	        String msg = "DLSSimpleJdbcDaoSupport.delete(): record not deleted";
+	        throw new DLSPersistenceOptimisticLockStopException(msg);
+	    }
+	}	
 
 	private void logGenerateKeySet(KeyHolder generatedKeyHolder) {
 		Map<?,?> keyMap = generatedKeyHolder.getKeys();
@@ -202,19 +177,17 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
 			
-	        if (this.getNamedParameterJdbcTemplate() == null) {
-	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
-	        }			
 			
-			rc = this.getNamedParameterJdbcTemplate().update(sql,
+			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+			rc = jdbcTemplate.update(sql,
 					localParamSource, generatedKeyHolder);
 
 		} catch (DataAccessException hbEx) {
-			msg = "AppMenuItemDao.createGenericObject(): DataAccessException caught, convert and throw: ["
+			msg = "executeGenericSQLScript: DataAccessException caught, convert and throw: ["
 					+ hbEx + "]";
 			logger.error(msg);
 		} catch (Exception exc) {
-			msg = "AppMenuItemDao.createGenericObject(): Exception caught, convert and throw: ["
+			msg = "executeGenericSQLScript: Exception caught, convert and throw: ["
 					+ exc + "]";
 			logger.error(msg);
 			throw new DLSPersistenceFatalException(msg, exc);
