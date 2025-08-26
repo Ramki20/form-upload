@@ -48,6 +48,11 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 		try {
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
+			
+	        if (this.getNamedParameterJdbcTemplate() == null) {
+	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
+	        }			
+			
 			rc = this.getNamedParameterJdbcTemplate().update(sql,
 					localParamSource, generatedKeyHolder);
 			if (rc == 1) {
@@ -98,6 +103,11 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 		try {
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
+			
+	        if (this.getNamedParameterJdbcTemplate() == null) {
+	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
+	        }
+	        
 			rc = this.getNamedParameterJdbcTemplate().update(sql,
 					localParamSource);
 		} catch (DataAccessException hbEx) {
@@ -132,6 +142,11 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 		try {
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
+			
+	        if (this.getNamedParameterJdbcTemplate() == null) {
+	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
+	        }			
+			
 			rc = this.getNamedParameterJdbcTemplate().update(sql,
 					localParamSource);
 		} catch (DataAccessException hbEx) {
@@ -154,6 +169,12 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 
 	private void logGenerateKeySet(KeyHolder generatedKeyHolder) {
 		Map<?,?> keyMap = generatedKeyHolder.getKeys();
+		
+	    if (keyMap == null) {
+	        logger.info("No keys returned from insert operation");
+	        return;
+	    }		
+		
 		logger.info("Key and Value from insert())");
 		Iterator<?> keyIterator = keyMap.keySet().iterator();
 		Iterator<?> valueIterator = keyMap.values().iterator();
@@ -180,6 +201,11 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 		try {
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
+			
+	        if (this.getNamedParameterJdbcTemplate() == null) {
+	            throw new DLSPersistenceFatalException("NamedParameterJdbcTemplate is null - check configuration");
+	        }			
+			
 			rc = this.getNamedParameterJdbcTemplate().update(sql,
 					localParamSource, generatedKeyHolder);
 
