@@ -52,13 +52,14 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
 			
-			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
-			rc = jdbcTemplate.update(sql, localParamSource, generatedKeyHolder);
+			NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
+			rc = jdbcTemplate.update(sql, localParamSource, generatedKeyHolder);			
+			
 			if (rc == 1) {
 				try {
-					if (generatedKeyHolder.getKey() != null) {
-						Integer generatedId = generatedKeyHolder.getKey()
-								.intValue();
+					Number key = generatedKeyHolder.getKey();
+					if (key != null) {
+						Integer generatedId = key.intValue();
 						domainObject.setId(generatedId);
 					} else {
 						logGenerateKeySet(generatedKeyHolder);
@@ -103,8 +104,9 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 	        SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 	                domainObject);
 	        
-			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
+	        NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
 	        rc = jdbcTemplate.update(sql, localParamSource);
+	        
 	    } catch (DataAccessException hbEx) {
 	        msg = "DLSSimpleJdbcDaoSupport." + operationType + "(): DataAccessException caught, convert and throw: ["
 	                + hbEx + "]";
@@ -177,10 +179,8 @@ public abstract class DLSSimpleJdbcDaoSupport<BO extends BusinessObjectBase, Key
 			SqlParameterSource localParamSource = new BeanPropertySqlParameterSource(
 					domainObject);
 			
-			
-			JdbcTemplate jdbcTemplate = new DAOUtil().validateJdbcTemplate(this.getJdbcTemplate());
-			rc = jdbcTemplate.update(sql,
-					localParamSource, generatedKeyHolder);
+			NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
+			rc = jdbcTemplate.update(sql, localParamSource, generatedKeyHolder);			
 
 		} catch (DataAccessException hbEx) {
 			msg = "executeGenericSQLScript: DataAccessException caught, convert and throw: ["
