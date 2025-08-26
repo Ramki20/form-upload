@@ -93,7 +93,7 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 		return retrieve(referenceBO, sqlStatement,parameters,rowMapper);
 	}
 
-	// FIXED: Convert PreparedStatementSetter approach to use NamedParameterJdbcTemplate
+	// FIXED: Use named parameters approach for SQL injection protection
 	protected List<BO> retrieve(String baseSQLQuery,
 			IDLSPreparedStatementSetter setter, RowMapper<BO> rowMapper)
 			throws DLSPersistenceFatalException {
@@ -101,14 +101,9 @@ public abstract class DLSReadonlyJdbcDaoSupport<BO extends BusinessObjectBase, K
 		List<BO> domainObjects = new ArrayList<BO>();
 
 		try {
-			// Convert the PreparedStatementSetter approach to use named parameters
-			String finalSql = setter.buildSQLStatement(baseSQLQuery);
-			MapSqlParameterSource paramSource = new MapSqlParameterSource();
-			
-			// If the setter provides parameter values, we need to extract them
-			// This is a workaround since we can't directly convert PreparedStatementSetter
-			// to named parameters. You may need to modify IDLSPreparedStatementSetter
-			// to provide parameter names and values separately
+			// Use the new named parameter methods from the enhanced interface
+			String finalSql = setter.buildNamedParameterSQLStatement(baseSQLQuery);
+			SqlParameterSource paramSource = setter.getNamedParameters();
 			
 			NamedParameterJdbcTemplate jdbcTemplate = new DAOUtil().validateNamedParameterJdbcTemplate(this.getNamedParameterJdbcTemplate());
 			domainObjects = jdbcTemplate.query(finalSql, paramSource, rowMapper);
