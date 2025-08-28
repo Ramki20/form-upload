@@ -1,0 +1,1096 @@
+package gov.usda.fsa.fcao.flp.flpids.common.business.businessServices;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
+
+import gov.usda.fsa.acct.nps.connector.NPSConnector;
+import gov.usda.fsa.acct.nps.connector.NPSConnectorException;
+import gov.usda.fsa.acct.nps.connector.NPSConnectorFactory;
+import gov.usda.fsa.acct.nps.connector.contract.CancelRequestConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.CheckHealthConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.FinancialEligibilityConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.PaymentRequestConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.RetrieveOverpaymentStatusByURIConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.RetrievePaymentStatusByURIConnectorContract;
+import gov.usda.fsa.acct.nps.connector.contract.RetrievePaymentStatusConnectorContract;
+import gov.usda.fsa.acct.nps.connector.response.FinancialEligibilityConnectorResponse;
+import gov.usda.fsa.acct.nps.connector.response.OverpaymentConnectorResponse;
+import gov.usda.fsa.acct.nps.connector.response.PaymentConnectorResponse;
+import gov.usda.fsa.common.base.AgencyToken;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.DisbursementRequestBC;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.FinancialEligibilityRequestBC;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.RetrieveOverpaymentDetailsByUriBC;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.RetrievePaymentDetailsByUriBC;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.DisbursementResponseBO;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.FinancialEligibilityResponseBO;
+import gov.usda.fsa.fcao.flp.flpids.common.business.common.DLSExternalCommonTestMockBase;
+import gov.usda.fsa.fcao.flp.flpids.common.business.exceptions.DLSBCInvalidDataStopException;
+import gov.usda.fsa.fcao.flp.flpids.common.business.exceptions.DLSBusinessServiceException;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+import junit.framework.Assert;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
+
+/**
+ * DisbursementBS_UT Encapsulates all the test cases for Disbursement
+ * 
+ * @author naresh.gotoor
+ * @version 3/5/2014
+ * 
+ */
+
+@RunWith(MockitoJUnitRunner.class)
+public class DisbursementBSMock_UT extends DLSExternalCommonTestMockBase
+{
+	@Mock
+	DisbursementBS disbursementBS = new DisbursementBS();
+	
+	@Before
+	public void setUp() throws Exception
+	{
+		
+	}	
+	
+	protected AgencyToken createAgencyToken()
+	{
+		return createAgencyToken("DLMTest_User");
+	}
+	
+	protected AgencyToken createAgencyToken(String inUserId)
+	{
+		AgencyToken agencyToken = new AgencyToken();
+		//agencyToken.setProcessingNode("DLM_jUnit_TEST");
+		try
+		{
+			agencyToken.setProcessingNode(InetAddress.getLocalHost().getHostName());
+		}
+		catch (UnknownHostException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		agencyToken.setApplicationIdentifier("OY");
+		agencyToken.setRequestHost("localhost");
+		agencyToken.setUserIdentifier(inUserId);
+		agencyToken.setReadOnly(true);
+		return agencyToken;
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testCreateAPaymentRequest() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+			populateDisbursementRequestBC(disbursementRequestBC);
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			PaymentConnectorResponse response = populatePaymentConnectorResponse();
+			when(npsConnectorMock.processPayment(any(PaymentRequestConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.createAPaymentRequest(disbursementRequestBC);
+			assertTrue(disbursementResponseBO.getPaymentId().equals(Long.valueOf("123")));
+		}
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with NPSConnectorException exception.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testCreateAPaymentRequest_NPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+			populateDisbursementRequestBC(disbursementRequestBC);
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.processPayment(any(PaymentRequestConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException.."));
+			
+			disbursementBS.createAPaymentRequest(disbursementRequestBC);
+		}
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testCreateAPaymentRequest_WithErrors() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+			populateDisbursementRequestBC(disbursementRequestBC);
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			PaymentConnectorResponse response = populatePaymentConnectorResponse_WithErrors();
+			when(npsConnectorMock.processPayment(any(PaymentRequestConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.createAPaymentRequest(disbursementRequestBC);
+			assertTrue("Invalid Customer".equals(disbursementResponseBO.getNpsRequestFailureReasonDescription()));
+		}
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with null contract.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NullDisbursementRequestBC() throws Exception
+	{
+		disbursementBS.createAPaymentRequest(null);
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with null agencyToken.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NullAgencyToken() throws Exception
+	{
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(null);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with an empty application name.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_ErrorDisAppNameNotEmpty() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setAppName("");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with an non-numeric program code.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NonNumericProgramCode() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setProgramCode("abcd");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with program code length not equal to 4.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_ProgramCodeLengthNotEqualTo4() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setProgramCode("123");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}	
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with program year not between 1776 and 9999.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_ErrorDisAppProgramYearBetween1776And9999() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setProgramYear(1775);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with future Accounting Service Request Date.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_AccountingServiceRequestDateCannotBeAFutureDate() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		Calendar accountingServiceRequestDate = Calendar.getInstance();
+		accountingServiceRequestDate.set(Calendar.DATE, Calendar.getInstance().get(Calendar.DATE) + 2);
+		disbursementRequestBC.setAccountingServiceRequestDate(accountingServiceRequestDate);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with address information line length greater then 35.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_AddressInformationLineShouldBeLessThen35() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setAddressInformationLine("abncaopidfj asifja aofij adfjpaosifj aosdifj asdofijasdfoi jasdpfj");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with application system code length not equal to 2.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_ApplicatoinSystemCodeShouldBeOfLength2() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setApplicationSystemCode("ABC");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with budget fiscal year length not equal to 4.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_BudgetFiscalYearShouldBeOfLength4() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setBudgetFiscalYear(20000);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with invalid value of budget fiscal year(i.e. not between 1999 and current fiscal year).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_InvalidBudgetFiscalYear() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setBudgetFiscalYear(1998);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with null city name.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_CityNameNull() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setCityName(null);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with not-null city name for foreign address.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_CityNameNullForForeignAddress() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setForeignPersonFlag(true);
+		disbursementRequestBC.setCityName("My city..");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with physical county code length not equal to 3.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_PhysicalCountyCodeShouldBeOfLength3() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setCountyCode("0123");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with non-numeric code for physical county code.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_PhysicalCountyCodeShouldBeNumeric() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setCountyCode("abcd");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with physical state code length not equal to 2.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_PhysicalStateCodeShouldBeOfLength2() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setStateCode("0123");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with null value of state abbreviation.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_StateAbbreviationNull() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setStateAbbreviation(null);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with non-numeric code for physical state code.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_PhysicalStateCodeShouldBeNumeric() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setStateCode("abcd");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with invalid value of transaction amount(i.e. not between .01 and 8999999.99).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_InvalidTransactionAmount() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setTransactionAmount(BigDecimal.ZERO);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with a negative value of transaction quantity.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NegativeTransactionQuantity() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setTransactionQuantity(new BigDecimal(-1));
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with a non-numeric value of URI.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NonNumericURI() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setUniqueRequestIdentifier("abcdefghijklmno");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with a numeric value of URI and invalid length(i.e. greater then 15).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_InvalidLenghtOfURI() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setUniqueRequestIdentifier("12345678901234567");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with invalid vendor source.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_InvalidVendorSource() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setVendorSource("abcde");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with null value of zipcode for domestic address.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_NullValueOfZipCodeForDomesticAddress() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setZipCode(null);
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case for Creating Payment Request in NPS with invalid value of zipcode for domestic address(i.e. not between 5 and 9).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCreateAPaymentRequest_InvalidValueOfZipCodeForDomesticAddress() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		DisbursementRequestBC disbursementRequestBC = new DisbursementRequestBC(token);
+		populateDisbursementRequestBC(disbursementRequestBC);
+		disbursementRequestBC.setZipCode("123");
+		disbursementBS.createAPaymentRequest(disbursementRequestBC);		
+	}
+	
+	/**
+	 * Test case to Cancel Payment Request in NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testCancelAPaymentRequest() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			PaymentConnectorResponse response = populatePaymentConnectorResponse();
+			when(npsConnectorMock.cancelPayment(any(CancelRequestConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.cancelAPaymentRequest(token, "test", Long.valueOf("123"));
+			assertTrue(disbursementResponseBO.getPaymentId().equals(Long.valueOf("123")));
+		}
+	}
+	
+	/**
+	 * Test case to Cancel Payment Request in NPS with NPSConnectorException.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testCancelAPaymentRequest_WithNPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.cancelPayment(any(CancelRequestConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException..."));
+			disbursementBS.cancelAPaymentRequest(token, "test", Long.valueOf("123"));
+		}
+	}
+	
+	/**
+	 * Test case to Cancel Payment Request in NPS with null agency token.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCancelAPaymentRequest_NullAgencyToken() throws Exception
+	{
+		disbursementBS.cancelAPaymentRequest(null, "test", Long.valueOf("123"));
+	}
+	
+	/**
+	 * Test case to Cancel Payment Request in NPS with null application name.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCancelAPaymentRequest_NullApplicationName() throws Exception
+	{
+		disbursementBS.cancelAPaymentRequest(this.createAgencyToken(), null, Long.valueOf("123"));
+	}
+	
+	/**
+	 * Test case to Cancel Payment Request in NPS with null confirmation number.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testCancelAPaymentRequest_NullConfirmationNumber() throws Exception
+	{
+		disbursementBS.cancelAPaymentRequest(this.createAgencyToken(), "Test", null);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testRetrieveFinancialEligibility() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			FinancialEligibilityConnectorResponse response = populateFinancialEligibilityConnectorResponse();
+			when(npsConnectorMock.retrieveEligibilityInformation(any(FinancialEligibilityConnectorContract.class))).thenReturn(response);
+			
+			FinancialEligibilityResponseBO financialEligibilityResponseBO = disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+			assertTrue(Boolean.TRUE.equals(financialEligibilityResponseBO.getBankruptcyIndicator()));
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with NPSConnectorException
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testRetrieveFinancialEligibility_ResponseNPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			when(npsConnectorMock.retrieveEligibilityInformation(any(FinancialEligibilityConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException..."));
+			disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with empty application name.
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_EmptyApplicationName() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setAppName("");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with empty vendor id.
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_EmptyVendorId() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		Long l = new Long("0");
+		financialEligibilityRequestBC.setVendorId(new Long(l));
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with invalid county length(i.e. not equal to 3).
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_InvalidCountyLength() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setCountyCode("12");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with non numeric county code.
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_NonNumericCountyCode() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setCountyCode("ab");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with invalid program code length(i.e. not equal to 4).
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_InvalidProgramCodeLength() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setProgramCode("12");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with non numeric program code.
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_NonNumericProgramCode() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setProgramCode("abcd");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with Invalid Program Year(i.e. not between 1776 and 9999).
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_ProgramYearNotBetween1776And9999() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setProgramYear(1775);
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Financial Eligibility from NPS with non-numeric state code.
+	 * @throws Exception
+	 */
+	@Test(expected = DLSBCInvalidDataStopException.class)
+	public void testRetrieveFinancialEligibility_NonNumericStateCode() throws Exception
+	{
+		AgencyToken token = createAgencyToken();
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = populateFinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setStateCode("ab");
+		disbursementBS.retrieveFinancialEligibility(financialEligibilityRequestBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By ConfirmationNumber from NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testRetrievePaymentRequestByConfirmationNumber() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			PaymentConnectorResponse response = populatePaymentConnectorResponse();
+			when(npsConnectorMock.retrievePaymentStatus(any(RetrievePaymentStatusConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.retrievePaymentRequestByConfirmationNumber(token, 
+					"OY", Long.valueOf("123"));
+			assertTrue(disbursementResponseBO.getPaymentId().equals(Long.valueOf("123")));
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By ConfirmationNumber from NPS with null agency token.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testRetrievePaymentRequestByConfirmationNumber_NullAgencyToken() throws Exception
+	{
+		disbursementBS.retrievePaymentRequestByConfirmationNumber(null, "OY", Long.valueOf("123"));
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By ConfirmationNumber from NPS with null confirmation number.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testRetrievePaymentRequestByConfirmationNumber_NullPaymentConfirmationNumber() throws Exception
+	{
+		disbursementBS.retrievePaymentRequestByConfirmationNumber(this.createAgencyToken(), "OY", null);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By ConfirmationNumber from NPS with null application name.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testRetrievePaymentRequestByConfirmationNumber_NullApplicationName() throws Exception
+	{
+		disbursementBS.retrievePaymentRequestByConfirmationNumber(this.createAgencyToken(), null, Long.valueOf("123"));
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By ConfirmationNumber from NPS
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testRetrievePaymentRequestByConfirmationNumber_NPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();		
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.retrievePaymentStatus(any(RetrievePaymentStatusConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException.."));
+			disbursementBS.retrievePaymentRequestByConfirmationNumber(token, "OY", Long.valueOf("123"));
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS
+	 * @throws Exception
+	 */
+	@Test
+	public void testRetrievePaymentRequestByURI() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			RetrievePaymentDetailsByUriBC retrievePaymentDetailsByUriBC = new RetrievePaymentDetailsByUriBC(token);
+			retrievePaymentDetailsByUriBC.setApplicationSystemCode("OY");
+			retrievePaymentDetailsByUriBC.setAppName("OY");
+			retrievePaymentDetailsByUriBC.setProgramYear(Integer.valueOf("2014"));
+			retrievePaymentDetailsByUriBC.setUniqueRequestIdentifier("123");
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			PaymentConnectorResponse response = populatePaymentConnectorResponse();
+			when(npsConnectorMock.retrievePaymentStatusByURI(any(RetrievePaymentStatusByURIConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.retrievePaymentRequestByURI(retrievePaymentDetailsByUriBC);
+			assertTrue(disbursementResponseBO.getPaymentId().equals(Long.valueOf("123")));
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with NPSConnectorException
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testRetrievePaymentRequestByURI_WithNPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();
+			RetrievePaymentDetailsByUriBC retrievePaymentDetailsByUriBC = new RetrievePaymentDetailsByUriBC(token);
+			retrievePaymentDetailsByUriBC.setApplicationSystemCode("OY");
+			retrievePaymentDetailsByUriBC.setAppName("OY");
+			retrievePaymentDetailsByUriBC.setProgramYear(Integer.valueOf("2014"));
+			retrievePaymentDetailsByUriBC.setUniqueRequestIdentifier("123");
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.retrievePaymentStatusByURI(any(RetrievePaymentStatusByURIConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException.."));
+			disbursementBS.retrievePaymentRequestByURI(retrievePaymentDetailsByUriBC);
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS
+	 * @throws Exception
+	 */
+	@SuppressWarnings("deprecation")
+	@Test
+	public void testretrieveOverpaymentStatusByURI() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();		
+			RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(token);
+			retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("OY");
+			retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+			retrieveOverpaymentDetailsByUriBC.setProgramYear("2014");
+			retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("123");
+			
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			
+			OverpaymentConnectorResponse response = populateOverpaymentConnectorResponse();
+			when(npsConnectorMock.retrieveOverpaymentStatusByURI(any(RetrieveOverpaymentStatusByURIConnectorContract.class))).thenReturn(response);
+			
+			DisbursementResponseBO disbursementResponseBO = disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+			assertTrue("123".equals(disbursementResponseBO.getUniqueRequestIdentifier()));
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with NPSConnectorException
+	 * @throws Exception
+	 */
+	@SuppressWarnings("deprecation")
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testretrieveOverpaymentStatusByURI_WithNPSConnectorException() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = createAgencyToken();		
+			RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(token);
+			retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("OY");
+			retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+			retrieveOverpaymentDetailsByUriBC.setProgramYear("2014");
+			retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("123");
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.retrieveOverpaymentStatusByURI(any(RetrieveOverpaymentStatusByURIConnectorContract.class))).thenThrow(new NPSConnectorException("Test NPSConnectorException.."));
+			disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+		}
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with null contract.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_NullContract() throws Exception
+	{
+		disbursementBS.retrieveOverpaymentStatusByURI(null);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with null agency token.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_NullAgencyToken() throws Exception
+	{
+		RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(null);
+		disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with invalid length of application system code(i.e. not equal to 2).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_InvalidApplicatoinSystemCodeLength() throws Exception
+	{
+		RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(this.createAgencyToken());
+		retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("abcd");
+		retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+		retrieveOverpaymentDetailsByUriBC.setProgramYear("2014");
+		retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("123");		
+		disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with invalid program year(i.e. not between 1776 and 9999).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_ProgramYearNotBetween1776And9999() throws Exception
+	{
+		RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(this.createAgencyToken());
+		retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("OY");
+		retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+		retrieveOverpaymentDetailsByUriBC.setProgramYear("1775");
+		retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("123");		
+		disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with invalid Length of URI(i.e. greater then 15).
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_InvalidURILength() throws Exception
+	{
+		RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(this.createAgencyToken());
+		retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("OY");
+		retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+		retrieveOverpaymentDetailsByUriBC.setProgramYear("1999");
+		retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("1234567890123456");		
+		disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+	}
+	
+	/**
+	 * Test case to Retrieve Payment Request By URI from NPS with non-numeric URI.
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBCInvalidDataStopException.class)
+	public void testretrieveOverpaymentStatusByURI_NonNumericURI() throws Exception
+	{
+		RetrieveOverpaymentDetailsByUriBC retrieveOverpaymentDetailsByUriBC = new RetrieveOverpaymentDetailsByUriBC(this.createAgencyToken());
+		retrieveOverpaymentDetailsByUriBC.setApplicationSystemCode("OY");
+		retrieveOverpaymentDetailsByUriBC.setAppName("OY");
+		retrieveOverpaymentDetailsByUriBC.setProgramYear("1999");
+		retrieveOverpaymentDetailsByUriBC.setUniqueRequestIdentifier("abcdefgh2342");		
+		disbursementBS.retrieveOverpaymentStatusByURI(retrieveOverpaymentDetailsByUriBC);
+	}
+	
+	/**
+	 * Test case to check nps health.
+	 * 
+	 * @throws Exception
+	 */
+	//@Test
+	public void testIsHealthy() throws Exception
+	{
+		Assert.assertTrue(disbursementBS.isHealthy(this.createAgencyToken()));
+	}
+	
+	/**
+	 * Test case to check nps health with invalid response.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testIsHealthy_InvalidResponse() throws Exception
+	{
+		try (MockedStatic<NPSConnectorFactory> mockedFactory = mockStatic(NPSConnectorFactory.class)) {
+			AgencyToken token = this.createAgencyToken();
+			NPSConnector npsConnectorMock = mock(NPSConnector.class);
+			mockedFactory.when(() -> NPSConnectorFactory.getConnector(token)).thenReturn(npsConnectorMock);
+			when(npsConnectorMock.checkHealth(any(CheckHealthConnectorContract.class)))
+			.thenReturn(null);
+			Assert.assertFalse(disbursementBS.isHealthy(this.createAgencyToken()));
+		}
+	}
+	
+	/**
+	 * Test case to check nps health with invalid agency token..
+	 * 
+	 * @throws Exception
+	 */
+	@Test(expected=DLSBusinessServiceException.class)
+	public void testIsHealthy_InvalidAgencyToken() throws Exception
+	{
+		disbursementBS.isHealthy(null);
+	}
+
+
+	private OverpaymentConnectorResponse populateOverpaymentConnectorResponse()
+	{
+		Map<String, String> errorMessages = new HashMap<String, String>();
+		OverpaymentConnectorResponse response = new OverpaymentConnectorResponse(BigDecimal.valueOf(0.00), Calendar.getInstance(), "Active", "123",
+				12345, 12345, errorMessages);
+		return response;
+	}
+
+	private FinancialEligibilityConnectorResponse populateFinancialEligibilityConnectorResponse()
+	{
+		Map<String, String> errorMessages = new HashMap<String, String>();
+		FinancialEligibilityConnectorResponse response = new FinancialEligibilityConnectorResponse(true, false, false,
+				true, false, "Active", errorMessages);
+		
+		return response;
+	}
+
+	/**
+	 * @param token
+	 */
+	private FinancialEligibilityRequestBC populateFinancialEligibilityRequestBC(AgencyToken token)
+	{
+		FinancialEligibilityRequestBC financialEligibilityRequestBC = new FinancialEligibilityRequestBC(token);
+		financialEligibilityRequestBC.setAppName("OY");		
+		financialEligibilityRequestBC.setVendorId(3005342);
+		financialEligibilityRequestBC.setVendorSource("SCIMS");
+		financialEligibilityRequestBC.setStateCode("01");
+		financialEligibilityRequestBC.setCountyCode("125");
+		financialEligibilityRequestBC.setProgramCode("0210");
+		financialEligibilityRequestBC.setProgramYear(Integer.valueOf("2014"));
+		return financialEligibilityRequestBC;
+	}
+	
+	/** 
+	 * with NPS version of 3.0.6 PaymentConnectorResponse() takes 8 parameters 
+	 * version 3.0.7 above change to take 9 parameter
+	 * @return
+	 */
+	private PaymentConnectorResponse populatePaymentConnectorResponse()
+	{
+		Map<String, String> errorMessages = new HashMap<String, String>();
+		PaymentConnectorResponse response = new PaymentConnectorResponse(123L, 12345L, errorMessages, "UI",
+				Calendar.getInstance(), "12346", Calendar.getInstance(), "Test User", 0L);
+		
+		return response;
+	}
+	
+	private PaymentConnectorResponse populatePaymentConnectorResponse_WithErrors()
+	{
+		Map<String, String> errorMessages = new HashMap<String, String>();
+		errorMessages.put("Error", "Invalid Customer");
+		PaymentConnectorResponse response = new PaymentConnectorResponse(123L, 12345L, errorMessages, "UI",
+				Calendar.getInstance(), "12346", Calendar.getInstance(), "Test User",0L);
+		
+		return response;
+	}
+
+	private DisbursementRequestBC populateDisbursementRequestBC(DisbursementRequestBC requestBC)
+	{	
+		requestBC.setAppName("PaymentsMigration");
+		requestBC.setProgramCode("0210");
+		requestBC.setAddressInformationLine("6801 NW 214TH ST");
+		requestBC.setDeliveryAddressLine("6801 NW 214TH ST");
+		requestBC.setApplicationSystemCode("VA");
+		requestBC.setBudgetFiscalYear(2013);
+		requestBC.setBureauOfIndianAffairsIndicator(false);
+		requestBC.setCityName("Alachua");
+		requestBC.setTransactionAmount(new BigDecimal(9000.00));
+		requestBC.setZipCode("32615");
+		requestBC.setVendorSource("SCIMS");
+		requestBC.setVendorId(3005342);
+		requestBC.setStateCode("09");
+		requestBC.setCountyCode("001");
+		requestBC.setStateAbbreviation("FL");
+		requestBC.setProgramYear(2000);
+		Calendar past = Calendar.getInstance();
+		// past.set(Calendar.YEAR, 2014);
+		requestBC.setAccountingServiceRequestDate(past);
+		requestBC.setPaymentIssueDate(Calendar.getInstance());
+		requestBC.setTransactionQuantity(new BigDecimal(3));
+		requestBC.setVendorName("Carol");
+		requestBC.setUniqueRequestIdentifier("12345");
+		requestBC.setForeignPersonFlag(false);
+		requestBC.setLoanNumber(123);
+		requestBC.setLoanTerm(7);
+		requestBC.setForcedCheck(true);
+		requestBC.setAlternatePayee(Boolean.TRUE);
+		requestBC.setObligationConfirmationNumber(new BigInteger("123"));
+		return requestBC;
+	}
+
+}
