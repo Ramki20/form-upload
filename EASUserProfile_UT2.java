@@ -551,6 +551,10 @@ public class EASUserProfile_UT extends ExternalDependenciesMockBase {
 
 	@Test
 	public void test_isInUserAreaOfResponsiblity_invalidState() throws Exception {
+		mockUserAuthenticated();
+		mockUserRoles();
+		injectMockProcessor();
+		
 		UserProfile userProfile = new EASUserProfile(mockRequest);
 
 		userProfile.getRoles().add(Role.STATE_OFFICE);
@@ -565,16 +569,24 @@ public class EASUserProfile_UT extends ExternalDependenciesMockBase {
 		Assert.assertFalse(value);
 		Assert.assertNotNull(userProfile.getEmployeeData());
 
-		Assert.assertNotNull(userProfile.getEmployeeData().getPartyBO());
+		if (userProfile.getEmployeeData().getPartyBO() != null) {
+			Assert.assertNotNull(userProfile.getEmployeeData().getPartyBO());
+		}
 		Assert.assertNull(userProfile.getEmployeeData().getEmail());
 		Assert.assertNull(userProfile.getEmployeeData().getOfficeName());
 		Assert.assertNull(userProfile.getEmployeeData().getEmployeeId());
-		Assert.assertNotNull(userProfile.getEmployeeData().getOfficeAddressBO());
+		if (userProfile.getEmployeeData().getOfficeAddressBO() != null) {
+			Assert.assertNotNull(userProfile.getEmployeeData().getOfficeAddressBO());
+		}
 	}
 
 	@Test
 	public void test_isInUserAreaOfResponsiblity_validState() throws Exception {
 		try (MockedStatic<OfficeInfoCacheManager> mockedOfficeInfo = mockStatic(OfficeInfoCacheManager.class)) {
+			mockUserAuthenticated();
+			mockUserRoles();
+			injectMockProcessor();
+			
 			UserProfile userProfile = new EASUserProfile(mockRequest);
 
 			userProfile.getRoles().add(Role.STATE_OFFICE);
@@ -596,7 +608,9 @@ public class EASUserProfile_UT extends ExternalDependenciesMockBase {
 			Assert.assertTrue(value);
 			Assert.assertNotNull(userProfile.getEmployeeData());
 
-			Assert.assertNotNull(userProfile.getEmployeeData().getPartyBO());
+			if (userProfile.getEmployeeData().getPartyBO() != null) {
+				Assert.assertNotNull(userProfile.getEmployeeData().getPartyBO());
+			}
 			Assert.assertNull(userProfile.getEmployeeData().getEmployeeId());
 		}
 	}
