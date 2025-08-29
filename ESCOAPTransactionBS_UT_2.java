@@ -385,7 +385,7 @@ public class ESCOAPTransactionBS_UT_Mockito extends DLSExternalCommonTestMockBas
                       .thenReturn(mockEscoapService);
             
             when(mockEscoapService.submitESCOAPTransaction(any(SubmitESCOAPTransactionBusinessContract.class)))
-                .thenThrow(new ESCOAPException("Service unavailable"));
+                .thenThrow(mock(ESCOAPException.class));
 
             // Act & Assert
             try {
@@ -499,7 +499,7 @@ public class ESCOAPTransactionBS_UT_Mockito extends DLSExternalCommonTestMockBas
                       .thenReturn(mockEscoapService);
             
             when(mockEscoapService.cancelESCOAPTransaction(any(CancelESCOAPTransactionBusinessContract.class)))
-                .thenThrow(new ESCOAPException("Service unavailable"));
+                .thenThrow(mock(ESCOAPException.class));
 
             // Act & Assert
             try {
@@ -594,7 +594,7 @@ public class ESCOAPTransactionBS_UT_Mockito extends DLSExternalCommonTestMockBas
                       .thenReturn(mockEscoapService);
             
             when(mockEscoapService.findESCOAPTransactionByTransactionId(any(FindTransactionByTransactionIdBusinessContract.class)))
-                .thenThrow(new ESCOAPException("Service unavailable"));
+                .thenThrow(mock(ESCOAPException.class));
 
             // Act & Assert
             try {
@@ -619,7 +619,7 @@ public class ESCOAPTransactionBS_UT_Mockito extends DLSExternalCommonTestMockBas
             
             tokenFactoryMock.when(() -> DLSAgencyTokenFactory.createAgencyTokenFromDLSAgencyToken(any()))
                            .thenReturn(agencyToken);
-            factoryMock.when(() => ESCOAPTransactionServiceFactory.createService(any(), anyString()))
+            factoryMock.when(() -> ESCOAPTransactionServiceFactory.createService(any(), anyString()))
                       .thenReturn(mockEscoapService);
             
             when(mockEscoapService.findESCOAPTransactionByTransactionId(any(FindTransactionByTransactionIdBusinessContract.class)))
