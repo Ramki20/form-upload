@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+			http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+	<context:component-scan base-package="gov.usda.fsa.fcao.flp.flpids.common" />
+		
+	<bean id="agencyEncryption"
+		class="gov.usda.fsa.fcao.flp.flpids.common.utilities.AgencyEncryption">
+	</bean>
+	
+	<bean id="fbpConnector" 
+	  class="gov.usda.fsa.fcao.flpids.fbpservice.jaxws.FBPConnectorFactory" factory-method="getConnector">
+	</bean>
+	<bean id="fbpProxySBConnector"
+	  class="gov.usda.fsa.fcao.flp.flpids.common.business.serviceBroker.connectors.FBPProxySBConnector">
+	  <property name="fbpConnector" ref="fbpConnector"></property>
+	</bean>	
+	<bean id="fbpProxyDao"
+		class="gov.usda.fsa.fcao.flp.flpids.common.dao.FBPProxyDao">
+		<property name="fbpProxySBConnector" ref="fbpProxySBConnector"></property>
+	</bean>
+	<bean id="fbpProxyBS"
+		class="gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.FBPProxyBS">
+		<property name="agencyEncryption" ref="agencyEncryption" />
+		<property name="fbpProxyDao" ref="fbpProxyDao"/>			
+	</bean>
+
+	<bean id="fbpBusinessService"
+		class="gov.usda.fsa.fcao.flp.services.fbp.impl.FarmBusinessPlanServiceImpl">
+		<property name="farmBusinessPlanProxyService" ref="fbpProxyBS" />
+	</bean>	
+
+</beans>
