@@ -1,4 +1,3 @@
-
 package gov.usda.fsa.fcao.flpids.fbpservice.jaxws;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -9,11 +8,8 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.bind.JAXBException;
 import jakarta.xml.ws.WebServiceException;
 import jakarta.xml.ws.soap.SOAPFaultException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -417,25 +413,23 @@ class FBPServiceStaticClientTest {
 
     private ArrayOfVendorClient createMockArrayOfVendorClient() {
         ArrayOfVendorClient arrayOfVendorClient = new ArrayOfVendorClient();
-        List<VendorClient> vendorClients = new ArrayList<>();
         
         VendorClient vendorClient1 = new VendorClient();
         vendorClient1.setCoreCustomerID(5470400);
         vendorClient1.setClientID(188723);
         
         ArrayOfLenderStaff arrayOfLenderStaff1 = new ArrayOfLenderStaff();
-        List<LenderStaff> staffList1 = new ArrayList<>();
         
         LenderStaff staff1 = new LenderStaff();
         staff1.setStaffMember("Chantal Haun");
         staff1.setTitle("Farm Loan Manager");
         staff1.setEmail("chantal.haun@ca.usda.gov");
         staff1.setRole("Lender");
-        staffList1.add(staff1);
         
-        arrayOfLenderStaff1.setLenderStaff(staffList1);
+        arrayOfLenderStaff1.getLenderStaff().add(staff1);
+        
         vendorClient1.setLenderStaffList(arrayOfLenderStaff1);
-        vendorClients.add(vendorClient1);
+        arrayOfVendorClient.getVendorClient().add(vendorClient1);
         
         VendorClient vendorClient2 = new VendorClient();
         vendorClient2.setCoreCustomerID(7495988);
@@ -451,11 +445,12 @@ class FBPServiceStaticClientTest {
         staff2.setRole("Lender");
         staffList2.add(staff2);
         
-        arrayOfLenderStaff2.setLenderStaff(staffList2);
-        vendorClient2.setLenderStaffList(arrayOfLenderStaff2);
-        vendorClients.add(vendorClient2);
+        arrayOfLenderStaff2.getLenderStaff().add(staff2);
         
-        arrayOfVendorClient.setVendorClient(vendorClients);
+        vendorClient2.setLenderStaffList(arrayOfLenderStaff2);
+        
+        arrayOfVendorClient.getVendorClient().add(vendorClient2);
+        
         return arrayOfVendorClient;
     }
 }
