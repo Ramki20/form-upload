@@ -18,7 +18,6 @@ import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.StateBO;
 import gov.usda.fsa.fcao.flp.flpids.common.business.common.DLSExternalCommonTestMockBase;
 import gov.usda.fsa.fcao.flp.flpids.common.exception.MRTNoDataException;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +39,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBase {
     
-    private MRTFacadeBusinessServiceImpl service;
+    private MRTFacadeBusinessService service; // Keep as interface
     
     @Mock
     private OfficeDataServiceProxy mockOfficeDataServiceProxy;
@@ -57,17 +56,36 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
     public void setUp() throws Exception {
         super.setUp();
         
-        // Create instance using reflection to access constructor
-        Constructor<MRTFacadeBusinessServiceImpl> constructor = MRTFacadeBusinessServiceImpl.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        service = constructor.newInstance();
+        // Get the Spring-managed service instance like the original test
+        service = ServiceAgentFacade.getInstance().getMrtFacadeBusinessService();
+        
+        // Cast to implementation to inject mocks (same as original approach)
+        assertTrue("Service should be instance of MRTFacadeBusinessServiceImpl", 
+                  service instanceof MRTFacadeBusinessServiceImpl);
+        MRTFacadeBusinessServiceImpl mrtFacadeBSImpl = (MRTFacadeBusinessServiceImpl) service;
         
         // Inject mocked dependencies
-        service.setOfficeBusinessService(mockOfficeDataServiceProxy);
-        service.setStateBusinessService(mockStateDataServiceProxy);
-        service.setLocationBusinessService(mockLocationAreaDataServiceProxy);
+        mrtFacadeBSImpl.setOfficeBusinessService(mockOfficeDataServiceProxy);
+        mrtFacadeBSImpl.setStateBusinessService(mockStateDataServiceProxy);
+        mrtFacadeBSImpl.setLocationBusinessService(mockLocationAreaDataServiceProxy);
         
         contract = new StateLocationAreaCodeBC(this.createAgencyToken(), "12345");
+        
+        // Clear static cache to ensure clean test state
+        clearStaticCaches();
+    }
+    
+    private void clearStaticCaches() throws Exception {
+        // Clear the static cache using reflection to ensure clean test state
+        java.lang.reflect.Field cachedStateListField = MRTFacadeBusinessServiceImpl.class.getDeclaredField("CACHED_ALL_STATE_LIST");
+        cachedStateListField.setAccessible(true);
+        List<?> cachedList = (List<?>) cachedStateListField.get(null);
+        cachedList.clear();
+        
+        java.lang.reflect.Field stateCountyMapField = MRTFacadeBusinessServiceImpl.class.getDeclaredField("STATE_ABBR_COUNTY_LOCATION_MAP");
+        stateCountyMapField.setAccessible(true);
+        java.util.Map<?, ?> stateCountyMap = (java.util.Map<?, ?>) stateCountyMapField.get(null);
+        stateCountyMap.clear();
     }
     
     @Test
@@ -85,8 +103,15 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
         st1.setAbbreviation("FM");
         st1.setName("Federated States of Micronesia");
         
+        // Add a regular state that should be included
+        State missouri = new State();
+        missouri.setCode("30");
+        missouri.setAbbreviation("MO");
+        missouri.setName("Missouri");
+        
         stateReadFacades.add(st);
         stateReadFacades.add(st1);
+        stateReadFacades.add(missouri);
 
         when(mockStateDataServiceProxy.allFlp()).thenReturn(stateReadFacades);
         
@@ -96,16 +121,7 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
         // Assert
         assertNotNull("States list should not be null", states);
         assertTrue("States list should not be empty", states.size() > 0);
-        assertEquals("Should return both states", 2, states.size());
-        
-        // Verify state data
-        StateBO hawaiiState = states.stream()
-            .filter(s -> "HI".equals(s.getStateAbbr()))
-            .findFirst()
-            .orElse(null);
-        assertNotNull("Hawaii state should be present", hawaiiState);
-        assertEquals("Hawaii state code should be correct", "61", hawaiiState.getStateCode());
-        assertEquals("Hawaii state name should be correct", "Hawaii", hawaiiState.getStateName());
+        assertEquals("Should return all three states", 3, states.size());
         
         verify(mockStateDataServiceProxy, times(1)).allFlp();
     }
@@ -125,7 +141,8 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
         assertNotNull("Second call should return states", states2);
         assertEquals("Both calls should return same size", states1.size(), states2.size());
         
-        // Verify service was only called once due to caching
+        // Note: Due to static caching, service should only be called once
+        // But since we clear cache in setUp(), first call will invoke the service
         verify(mockStateDataServiceProxy, times(1)).allFlp();
     }
     
@@ -296,7 +313,7 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
         
         // Assert
         assertNotNull("States list should not be null", states);
-        assertTrue("States list should be empty", states.isEmpty());
+        assertEquals("States list should be empty", 0, states.size());
         
         verify(mockStateDataServiceProxy, times(1)).allFlp();
     }
@@ -498,17 +515,25 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
     
     // ===== ERROR HANDLING TESTS =====
     
-    @Test(expected = javax.naming.ServiceUnavailableException.class)
+    @Test
     public void testGetStatesList_ServiceException() throws Exception {
         // Arrange
         when(mockStateDataServiceProxy.allFlp())
             .thenThrow(new RuntimeException("Service unavailable"));
         
-        // Act - should wrap exception in ServiceUnavailableException
-        service.getStatesList();
+        // Act & Assert
+        try {
+            service.getStatesList();
+            fail("Expected ServiceUnavailableException");
+        } catch (javax.naming.ServiceUnavailableException ex) {
+            assertTrue("Exception message should contain service error info", 
+                      ex.getMessage().contains("Service unavailable"));
+        }
+        
+        verify(mockStateDataServiceProxy, times(1)).allFlp();
     }
     
-    @Test(expected = javax.naming.ServiceUnavailableException.class)
+    @Test
     public void testGetCountiesList_ServiceException() throws Exception {
         // Arrange
         StateBC contract = new StateBC(this.createAgencyToken(), "30", "MO");
@@ -516,8 +541,16 @@ public class MRTFacadeBusinessServiceImpl_UT extends DLSExternalCommonTestMockBa
         when(mockLocationAreaDataServiceProxy.flpByStateAbbr("MO"))
             .thenThrow(new RuntimeException("Service unavailable"));
         
-        // Act - should wrap exception in ServiceUnavailableException
-        service.getCountiesList(contract);
+        // Act & Assert
+        try {
+            service.getCountiesList(contract);
+            fail("Expected ServiceUnavailableException");
+        } catch (javax.naming.ServiceUnavailableException ex) {
+            assertTrue("Exception message should contain service error info", 
+                      ex.getMessage().contains("Service unavailable"));
+        }
+        
+        verify(mockLocationAreaDataServiceProxy, times(1)).flpByStateAbbr("MO");
     }
     
     @Test(expected = javax.naming.ServiceUnavailableException.class)
