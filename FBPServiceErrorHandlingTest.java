@@ -7,10 +7,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.ws.WebServiceException;
-import javax.xml.ws.soap.SOAPFaultException;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.ws.WebServiceException;
+import jakarta.xml.ws.soap.SOAPFaultException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -243,12 +243,8 @@ class FBPServiceErrorHandlingTest {
     @Test
     void testGetLenderStaffData_RecordsNotFound_SOAPFaultException() throws Exception {
         List<Integer> customerIds = Arrays.asList(5470400);
-        SOAPFaultException exception = new SOAPFaultException(null) {
-            @Override
-            public String getMessage() {
-                return "Response message did not contain proper response data";
-            }
-        };
+        // Use WebServiceException instead of SOAPFaultException to avoid constructor issues
+        WebServiceException exception = new WebServiceException("Response message did not contain proper response data");
         
         try (MockedStatic<JNDIUtil> jndiUtilMock = mockStatic(JNDIUtil.class)) {
             setupJNDIMocks(jndiUtilMock);
@@ -352,12 +348,8 @@ class FBPServiceErrorHandlingTest {
 
     @Test
     void testRecordsNotFound_JBossEAP7Exception() throws Exception {
-        SOAPFaultException exception = new SOAPFaultException(null) {
-            @Override
-            public String getMessage() {
-                return "Response message did not contain proper response data";
-            }
-        };
+        // Use WebServiceException instead of SOAPFaultException to avoid constructor issues
+        WebServiceException exception = new WebServiceException("Response message did not contain proper response data");
         
         try (MockedStatic<JNDIUtil> jndiUtilMock = mockStatic(JNDIUtil.class)) {
             setupJNDIMocks(jndiUtilMock);
