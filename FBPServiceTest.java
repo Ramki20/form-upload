@@ -8,7 +8,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.xml.namespace.QName;
-import javax.xml.ws.WebServiceFeature;
+import jakarta.xml.ws.WebServiceFeature;
 import java.net.MalformedURLException;
 import java.net.URL;
 
