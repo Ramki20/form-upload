@@ -7,10 +7,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.ws.WebServiceException;
-import javax.xml.ws.soap.SOAPFaultException;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.ws.WebServiceException;
+import jakarta.xml.ws.soap.SOAPFaultException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
