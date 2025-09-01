@@ -1,16 +1,21 @@
-package gov.usda.fsa.fcao.flp.flpids.scims.base;
-
-import gov.usda.fsa.common.base.AgencyToken;
-import gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.ServiceAgentFacade;
+package gov.usda.fsa.fcao.flp.flpids.common;
 
 import org.junit.Before;
 
-public class ScimsTestCaseBase extends JNDISpringMockBase{
+import gov.usda.fsa.common.base.AgencyToken;
+import gov.usda.fsa.fcao.flp.flpids.common.business.businessServices.ServiceAgentFacade;
+import gov.usda.fsa.fcao.flp.flpids.scims.base.JNDISpringMockBase;
+
+public class ScimsTestBase extends JNDISpringMockBase{
 	private static AgencyToken sgencyToken;
 	protected ServiceAgentFacade serviceAgentFacade;
+	
+
+	
 	@Before
 	public void setUp() throws Exception{
 		super.setUp();
+		ServiceAgentFacade.setLAZYLOADING(true);
 		serviceAgentFacade = ServiceAgentFacade.getInstance();
 	}
 	protected AgencyToken getAgencyToken() {
@@ -29,4 +34,6 @@ public class ScimsTestCaseBase extends JNDISpringMockBase{
 		sgencyToken.setReadOnly(Boolean.TRUE);
 		return sgencyToken;
 	}
+	
+
 }

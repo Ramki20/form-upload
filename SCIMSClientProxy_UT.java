@@ -4,18 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,21 +24,18 @@ import gov.usda.fsa.common.base.AgencyToken;
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.RetrieveScimsCustomersByCoreCustomerIdBC;
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.ScimsCustomerBO;
 import gov.usda.fsa.fcao.flp.flpids.common.exception.SCIMSDataNotFoundException;
-import gov.usda.fsa.fcao.flp.flpids.scims.base.JNDISpringMockBase;
-import gov.usda.fsa.fcao.flp.flpids.util.JNDIMockBase;
+import gov.usda.fsa.parmo.scims.businessobject.BusinessType;
 import gov.usda.fsa.parmo.scims.businessobject.CoreCustomer;
 import gov.usda.fsa.parmo.scims.businessobject.CoreCustomerAddress;
 import gov.usda.fsa.parmo.scims.businessobject.CoreCustomerIdHistory;
-import gov.usda.fsa.parmo.scims.businessobject.InactiveCustomerType;
-import gov.usda.fsa.parmo.scims.businessobject.TaxIdentificationType;
 import gov.usda.fsa.parmo.scims.businessobject.CustomerType;
-import gov.usda.fsa.parmo.scims.businessobject.BusinessTypeCode;
+import gov.usda.fsa.parmo.scims.businessobject.TaxIdentificationType;
 import gov.usda.fsa.parmo.scims.service.CustomerSearchOptions;
 import gov.usda.fsa.parmo.scims.servicewrapper.SCIMSService;
 import gov.usda.fsa.parmo.scims.servicewrapper.reply.SCIMSServiceResult;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SCIMSClientProxy_UT extends JNDISpringMockBase {
+public class SCIMSClientProxy_UT  {
 
     @Mock
     private SCIMSService mockScimsService;
@@ -58,7 +50,6 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         
         // Create test agency token
         testAgencyToken = createTestAgencyToken();
@@ -82,16 +73,6 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         return token;
     }
 
-    @Test
-    public void testJNDISettings() throws Exception {
-        Context context = new InitialContext();
-
-        String value = getJNDIStringValue(context, JNDIMockBase.SERVICE_CONFIG_JNDI_NAMESPACE_ROOT_ENV_ENTRY_KEY);
-        assertEquals(JNDIMockBase.SERVICE_CONFIG_JNDI_NAMESPACE_ROOT_ENV_ENTRY_VALUE, value);
-        
-        value = getJNDIStringValue(context, JNDIMockBase.SERVICE_CONFIG_SPECIFIER_PATH_ENV_ENTRY_KEY);
-        assertEquals(JNDIMockBase.SERVICE_CONFIG_SPECIFIER_PATH_ENV_ENTRY_VALUE, value);
-    }
 
     @Test
     public void testGetCustomerByCustomerIds() throws Exception {
@@ -102,7 +83,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -128,7 +109,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -153,7 +134,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerListWithMergedHistory(customerId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -175,7 +156,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -196,7 +177,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -222,7 +203,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -245,7 +226,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerList(customerId, expectedTaxId);
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -265,7 +246,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         Integer customerId = 0;
         
         when(mockServiceResult.getCustomerList()).thenReturn(new ArrayList<>());
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -278,7 +259,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         String taxIandType = "400352979M";
         
         when(mockServiceResult.getCustomerList()).thenReturn(new ArrayList<>());
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -294,7 +275,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         List<CoreCustomer> mockCustomers = createMockCustomerListForTaxId(expectedTaxId, "S");
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -313,10 +294,10 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         Integer expectedCustomerId = 1432871;
         
         List<CoreCustomer> mockCustomers = createMockCustomerListForTaxId(taxId, "S");
-        mockCustomers.get(0).setCoreCustomerId(BigInteger.valueOf(expectedCustomerId));
+        mockCustomers.get(0).setCoreCustomerId(Integer.valueOf(expectedCustomerId));
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -335,10 +316,10 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         Integer customerId = 1432871;
         
         List<CoreCustomer> mockCustomers = createMockCustomerListForTaxId(taxId, "S");
-        mockCustomers.get(0).setCoreCustomerId(BigInteger.valueOf(customerId));
+        mockCustomers.get(0).setCoreCustomerId(Integer.valueOf(customerId));
         
         when(mockServiceResult.getCustomerList()).thenReturn(mockCustomers);
-        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), anyList()))
+        when(mockScimsService.getCustomers(eq(testAgencyToken), any(CustomerSearchOptions.class), any()))
             .thenReturn(mockServiceResult);
         
         // Act
@@ -377,8 +358,8 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         
         // Add merged ID history
         Set<CoreCustomerIdHistory> mergedHistory = new HashSet<>();
-        mergedHistory.add(createMockIdHistory(BigInteger.valueOf(2579305), BigInteger.valueOf(2579306)));
-        mergedHistory.add(createMockIdHistory(BigInteger.valueOf(2579307), BigInteger.valueOf(2579308)));
+        mergedHistory.add(createMockIdHistory(Integer.valueOf(2579305), Integer.valueOf(2579306)));
+        mergedHistory.add(createMockIdHistory(Integer.valueOf(2579307), Integer.valueOf(2579308)));
         customer.setMergedIdList(mergedHistory);
         
         customers.add(customer);
@@ -394,7 +375,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
     
     private CoreCustomer createBasicMockCustomer(Integer customerId, String taxId, String taxType) {
         CoreCustomer customer = new CoreCustomer();
-        customer.setCoreCustomerId(BigInteger.valueOf(customerId));
+        customer.setCoreCustomerId(Integer.valueOf(customerId));
         customer.setTaxIdentification(taxId);
         
         // Mock tax identification type
@@ -410,7 +391,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         customer.setCustomerType(customerType);
         
         // Mock business type code
-        BusinessTypeCode businessType = new BusinessTypeCode();
+        BusinessType businessType = new BusinessType();
         businessType.setBusinessTypeCode("INDIVIDUAL");
         businessType.setShortDescription("Individual");
         customer.setBusinessTypeCode(businessType);
@@ -440,8 +421,8 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         // Initialize empty collections to avoid null pointer exceptions
         customer.setEmailList(new HashSet<>());
         customer.setPhoneList(new HashSet<>());
-        customer.setLegacyLinkList(new ArrayList<>());
-        customer.setProgramParticipationList(new ArrayList<>());
+        customer.setLegacyLinkList(new HashSet<>());
+        customer.setProgramParticipationList(new HashSet<>());
         customer.setRaceList(new HashSet<>());
         customer.setEthnicityList(new HashSet<>());
         customer.setCoreIdHistoryList(new ArrayList<>());
@@ -450,7 +431,7 @@ public class SCIMSClientProxy_UT extends JNDISpringMockBase {
         return customer;
     }
     
-    private CoreCustomerIdHistory createMockIdHistory(BigInteger oldId, BigInteger newId) {
+    private CoreCustomerIdHistory createMockIdHistory(Integer oldId, Integer newId) {
         CoreCustomerIdHistory history = new CoreCustomerIdHistory();
         history.setOldCustomerIdentifier(oldId);
         history.setNewCustomerIdentifier(newId);
