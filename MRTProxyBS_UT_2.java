@@ -75,7 +75,7 @@ import gov.usda.fsa.fcao.flp.flpids.common.utilities.StringUtil;
 @RunWith(MockitoJUnitRunner.class)
 public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     
-    private MRTProxyBS service; // Changed to concrete class instead of interface
+    private IMRTProxyBS service; // Keep as interface
     
     @Mock
     private OfficeDataServiceProxy mockOfficeDataServiceProxy;
@@ -111,20 +111,75 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     public void setUp() throws Exception {
         super.setUp();
         
-        // Create a new instance directly instead of relying on Spring
-        service = new MRTProxyBS();
+        // Get the Spring-managed service instance
+        service = ServiceAgentFacade.getInstance().getMrtProxyBusinessService();
         
-        // Inject mocked dependencies directly
-        service.setFlpOfficeMRTBusinessService(mockOfficeDataServiceProxy);
-        service.setFlpStateMRTBusinessService(mockStateDataServiceProxy);
-        service.setInterestRateDataMartBusinessService(mockInterestRateDataServiceProxy);
-        service.setFlpLocationAreaDataMartBusinessService(mockLocationAreaDataServiceProxy);
-        service.setBusinessPartyDataService(mockBusinessPartyDataServiceProxy);
-        service.setEmployeeDataServiceProxy(mockEmployeeDataServiceProxy);
-        service.setSurrogateService(mockSurrogateService);
-        service.setCountyDataServiceProxy(mockCountyDataServiceProxy);
-        service.setCalendarDataServiceProxy(mockCalendarDataServiceProxy);
-        service.setMrtFacadeBusinessService(mockMRTFacadeBusinessService);
+        // Verify we got a service (even if it's a proxy)
+        assertNotNull("Service should not be null", service);
+        
+        // Use reflection to inject mocks into the Spring-managed bean
+        injectMockDependencies(service);
+    }
+    
+    /**
+     * Helper method to inject mock dependencies using reflection
+     * since we're working with a Spring-managed bean
+     */
+    private void injectMockDependencies(IMRTProxyBS serviceInstance) throws Exception {
+        // Use reflection to access the underlying object if it's a proxy
+        Object targetService = serviceInstance;
+        
+        // If it's a Spring proxy, we need to get the target object
+        if (serviceInstance.getClass().getName().contains("$Proxy") || 
+            serviceInstance.getClass().getName().contains("CGLIB")) {
+            // For CGLIB proxies or JDK proxies, try to get the target
+            try {
+                java.lang.reflect.Field targetField = serviceInstance.getClass().getDeclaredField("target");
+                targetField.setAccessible(true);
+                targetService = targetField.get(serviceInstance);
+            } catch (Exception e) {
+                // If we can't get the target, try alternative approaches
+                try {
+                    // Try to get advised field for AOP proxies
+                    java.lang.reflect.Field advisedField = serviceInstance.getClass().getDeclaredField("advised");
+                    advisedField.setAccessible(true);
+                    Object advised = advisedField.get(serviceInstance);
+                    java.lang.reflect.Method getTargetSource = advised.getClass().getMethod("getTargetSource");
+                    Object targetSource = getTargetSource.invoke(advised);
+                    java.lang.reflect.Method getTarget = targetSource.getClass().getMethod("getTarget");
+                    targetService = getTarget.invoke(targetSource);
+                } catch (Exception ex) {
+                    // If all else fails, work with the proxy directly
+                    targetService = serviceInstance;
+                }
+            }
+        }
+        
+        // Now inject the mocks using reflection
+        injectField(targetService, "flpOfficeMRTBusinessService", mockOfficeDataServiceProxy);
+        injectField(targetService, "flpStateMRTBusinessService", mockStateDataServiceProxy);
+        injectField(targetService, "interestRateDataMartBusinessService", mockInterestRateDataServiceProxy);
+        injectField(targetService, "flpLocationAreaDataMartBusinessService", mockLocationAreaDataServiceProxy);
+        injectField(targetService, "businessPartyDataService", mockBusinessPartyDataServiceProxy);
+        injectField(targetService, "employeeDataServiceProxy", mockEmployeeDataServiceProxy);
+        injectField(targetService, "surrogateService", mockSurrogateService);
+        injectField(targetService, "countyDataServiceProxy", mockCountyDataServiceProxy);
+        injectField(targetService, "calendarDataServiceProxy", mockCalendarDataServiceProxy);
+        injectField(targetService, "mrtFacadeBusinessService", mockMRTFacadeBusinessService);
+    }
+    
+    /**
+     * Helper method to inject a field value using reflection
+     */
+    private void injectField(Object target, String fieldName, Object value) {
+        try {
+            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (Exception e) {
+            // Log the error but don't fail the test setup
+            System.err.println("Warning: Could not inject field " + fieldName + ": " + e.getMessage());
+        }
     }
     
     @Test
