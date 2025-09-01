@@ -3,6 +3,7 @@ package gov.usda.fsa.fcao.flp.flpids.common.business.businessServices;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -12,11 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.ArgumentMatchers;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import gov.usda.fsa.citso.cbs.bc.InterestTypeId;
 import gov.usda.fsa.citso.cbs.bc.Surrogate;
@@ -58,7 +62,6 @@ import gov.usda.fsa.fcao.flp.flpids.common.business.businessContracts.RetrieveMR
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.FipsOfficeLocationAreaBO;
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.FlpOfficeLocationAreaBO;
 import gov.usda.fsa.fcao.flp.flpids.common.business.businessObjects.MrtLookUpBO;
-import gov.usda.fsa.fcao.flp.flpids.common.business.common.DLSExternalCommonTestMockBase;
 import gov.usda.fsa.fcao.flp.flpids.common.business.exceptions.DLSBusinessFatalException;
 import gov.usda.fsa.fcao.flp.flpids.common.business.exceptions.DLSBusinessStopException;
 import gov.usda.fsa.fcao.flp.flpids.common.utilities.StringUtil;
@@ -66,16 +69,18 @@ import gov.usda.fsa.fcao.flp.flpids.common.utilities.StringUtil;
 /**
  * MRTProxyBS_UT - Converted to use Mockito instead of PowerMock
  * 
- * Unit tests for MRTProxyBS using Mockito framework instead of PowerMock.
+ * Unit tests for MRTProxyBS using Mockito framework with isolated Spring context.
  * This version eliminates PowerMock dependencies for faster, more isolated testing.
  * 
  * @author FPAC-BC
  * @version 1.0
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
+public class MRTProxyBS_UT {
     
     private IMRTProxyBS service; // Keep as interface
+    private MRTProxyBS serviceImpl; // Reference to concrete impl for dependency injection
+    private ApplicationContext testContext;
     
     @Mock
     private OfficeDataServiceProxy mockOfficeDataServiceProxy;
@@ -109,77 +114,98 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     
     @Before
     public void setUp() throws Exception {
-        super.setUp();
+        // Create isolated Spring context for this test
+        createTestSpringContext();
         
-        // Get the Spring-managed service instance
-        service = ServiceAgentFacade.getInstance().getMrtProxyBusinessService();
+        // Get service from our isolated context
+        service = testContext.getBean("mrtProxyBS", IMRTProxyBS.class);
         
-        // Verify we got a service (even if it's a proxy)
-        assertNotNull("Service should not be null", service);
+        // Get concrete implementation for dependency injection
+        if (service instanceof MRTProxyBS) {
+            serviceImpl = (MRTProxyBS) service;
+        } else {
+            // Handle proxy case - try to get the target object
+            serviceImpl = extractTargetFromProxy(service);
+        }
         
-        // Use reflection to inject mocks into the Spring-managed bean
-        injectMockDependencies(service);
+        if (serviceImpl == null) {
+            fail("Could not obtain MRTProxyBS instance for testing");
+        }
+        
+        // Inject mocked dependencies into the concrete implementation
+        serviceImpl.setFlpOfficeMRTBusinessService(mockOfficeDataServiceProxy);
+        serviceImpl.setFlpStateMRTBusinessService(mockStateDataServiceProxy);
+        serviceImpl.setInterestRateDataMartBusinessService(mockInterestRateDataServiceProxy);
+        serviceImpl.setFlpLocationAreaDataMartBusinessService(mockLocationAreaDataServiceProxy);
+        serviceImpl.setBusinessPartyDataService(mockBusinessPartyDataServiceProxy);
+        serviceImpl.setEmployeeDataServiceProxy(mockEmployeeDataServiceProxy);
+        serviceImpl.setSurrogateService(mockSurrogateService);
+        serviceImpl.setCountyDataServiceProxy(mockCountyDataServiceProxy);
+        serviceImpl.setCalendarDataServiceProxy(mockCalendarDataServiceProxy);
+        serviceImpl.setMrtFacadeBusinessService(mockMRTFacadeBusinessService);
+    }
+    
+    @After
+    public void tearDown() throws Exception {
+        // Close test context if it exists
+        if (testContext != null && testContext instanceof org.springframework.context.ConfigurableApplicationContext) {
+            ((org.springframework.context.ConfigurableApplicationContext) testContext).close();
+        }
+    }
+    
+    private void createTestSpringContext() {
+        // Create a fresh Spring context for each test to avoid interference
+        String[] springConfigs = {
+            "classpath:gov/usda/fsa/fcao/flp/flpids/common/business/businessServices/common-external-service-spring-config.xml"
+        };
+        testContext = new ClassPathXmlApplicationContext(springConfigs);
     }
     
     /**
-     * Helper method to inject mock dependencies using reflection
-     * since we're working with a Spring-managed bean
+     * Extract the target object from a Spring proxy if needed
      */
-    private void injectMockDependencies(IMRTProxyBS serviceInstance) throws Exception {
-        // Use reflection to access the underlying object if it's a proxy
-        Object targetService = serviceInstance;
-        
-        // If it's a Spring proxy, we need to get the target object
-        if (serviceInstance.getClass().getName().contains("$Proxy") || 
-            serviceInstance.getClass().getName().contains("CGLIB")) {
-            // For CGLIB proxies or JDK proxies, try to get the target
-            try {
-                java.lang.reflect.Field targetField = serviceInstance.getClass().getDeclaredField("target");
-                targetField.setAccessible(true);
-                targetService = targetField.get(serviceInstance);
-            } catch (Exception e) {
-                // If we can't get the target, try alternative approaches
+    private MRTProxyBS extractTargetFromProxy(Object proxy) {
+        try {
+            // Try AOP proxy extraction
+            if (proxy.getClass().getName().contains("$Proxy") || 
+                proxy.getClass().getName().contains("CGLIB")) {
+                
+                // Try to get target through AopUtils (if available)
                 try {
-                    // Try to get advised field for AOP proxies
-                    java.lang.reflect.Field advisedField = serviceInstance.getClass().getDeclaredField("advised");
-                    advisedField.setAccessible(true);
-                    Object advised = advisedField.get(serviceInstance);
-                    java.lang.reflect.Method getTargetSource = advised.getClass().getMethod("getTargetSource");
-                    Object targetSource = getTargetSource.invoke(advised);
-                    java.lang.reflect.Method getTarget = targetSource.getClass().getMethod("getTarget");
-                    targetService = getTarget.invoke(targetSource);
-                } catch (Exception ex) {
-                    // If all else fails, work with the proxy directly
-                    targetService = serviceInstance;
+                    Class<?> aopUtilsClass = Class.forName("org.springframework.aop.support.AopUtils");
+                    Method getTargetMethod = aopUtilsClass.getMethod("getTargetObject", Object.class);
+                    Object target = getTargetMethod.invoke(null, proxy);
+                    if (target instanceof MRTProxyBS) {
+                        return (MRTProxyBS) target;
+                    }
+                } catch (Exception e) {
+                    // AopUtils not available or failed, try other approaches
+                }
+                
+                // Try to access through advised interface
+                try {
+                    if (proxy instanceof org.springframework.aop.framework.Advised) {
+                        org.springframework.aop.framework.Advised advised = (org.springframework.aop.framework.Advised) proxy;
+                        Object target = advised.getTargetSource().getTarget();
+                        if (target instanceof MRTProxyBS) {
+                            return (MRTProxyBS) target;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Advised interface not available or failed
                 }
             }
+            
+            // If it's already the concrete class, return it
+            if (proxy instanceof MRTProxyBS) {
+                return (MRTProxyBS) proxy;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Warning: Could not extract target from proxy: " + e.getMessage());
         }
         
-        // Now inject the mocks using reflection
-        injectField(targetService, "flpOfficeMRTBusinessService", mockOfficeDataServiceProxy);
-        injectField(targetService, "flpStateMRTBusinessService", mockStateDataServiceProxy);
-        injectField(targetService, "interestRateDataMartBusinessService", mockInterestRateDataServiceProxy);
-        injectField(targetService, "flpLocationAreaDataMartBusinessService", mockLocationAreaDataServiceProxy);
-        injectField(targetService, "businessPartyDataService", mockBusinessPartyDataServiceProxy);
-        injectField(targetService, "employeeDataServiceProxy", mockEmployeeDataServiceProxy);
-        injectField(targetService, "surrogateService", mockSurrogateService);
-        injectField(targetService, "countyDataServiceProxy", mockCountyDataServiceProxy);
-        injectField(targetService, "calendarDataServiceProxy", mockCalendarDataServiceProxy);
-        injectField(targetService, "mrtFacadeBusinessService", mockMRTFacadeBusinessService);
-    }
-    
-    /**
-     * Helper method to inject a field value using reflection
-     */
-    private void injectField(Object target, String fieldName, Object value) {
-        try {
-            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (Exception e) {
-            // Log the error but don't fail the test setup
-            System.err.println("Warning: Could not inject field " + fieldName + ": " + e.getMessage());
-        }
+        return null;
     }
     
     @Test
@@ -393,226 +419,34 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
             eq(FsaOfficeProperties.cityFipsCode), eq(FsaOfficeProperties.refId), 
             eq(FsaOfficeProperties.siteId), eq(FsaOfficeProperties.mailingZipCode), 
             eq(FsaOfficeProperties.mailingAddrInfoLine), eq(FsaOfficeProperties.mailingAddrLine)))
-            .thenReturn(officeList);
+            .thenReturn(new ArrayList<Office>());
 
         // Act
-        List<Office> ofcList = service.retrieveFSAOfficeListByOfficeIdentifierList(flpIdCodes);
+        String fsaCode = service.getFSAStateCountyCodeFromStateLocationAreaFLPCode(office_flp_code_str);
 
         // Assert
-        assertNotNull("Office list should not be null", ofcList);
-        assertTrue("Office list should not be empty", ofcList.size() > 0);
+        assertNotNull("FSA code should not be null", fsaCode);
+        assertEquals("FSA code should be empty when no FSA office found", "", fsaCode);
     }
 
     @Test
-    public void testRetriveFLPOfficesByOfficeFLPCdMap() throws Exception {
+    public void testGetFSAStateCountyCodeFromStateLocationAreaFLPCode_withSiteId() throws Exception {
         // Arrange
-        List<String> flpCodeList = new ArrayList<String>();
-        flpCodeList.add("01305");
+        String flpCode = "21047";
+        String expectedResult = "21047::8247";
 
         Office office = new Office();
-        office.setOfficeCode("01305");
+        office.setOfficeCode("21047");
+        office.setId(21047);
+        office.setSiteId(8247);
+
         List<Office> officeList = new ArrayList<Office>();
         officeList.add(office);
 
-        String[] flpStringCodesArray = flpCodeList.toArray(new String[0]);
+        String[] flpStringCodesArray = { flpCode };
         when(mockOfficeDataServiceProxy.flpOfficesByFlpCodeList(flpStringCodesArray)).thenReturn(officeList);
 
-        // Act
-        Map<String, Office> result = service.retriveFLPOfficesByOfficeFLPCdMap(flpCodeList);
-        
-        // Assert
-        Office ofc = result.get("01305");
-        assertNotNull("Office should not be null", ofc);
-    }
-
-    @Test
-    public void testRetrieveFLPOfficeMRTBusinessObjectReadFacadeList() throws Exception {
-        // Arrange
-        String stateAbbr = "MO";
-        Office office = new Office();
-        List<Office> officeList = new ArrayList<Office>();
-        officeList.add(office);
-        
-        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq(stateAbbr),
-            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
-            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
-            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(officeList);
-
-        // Act
-        List<Office> flpOfficeList = service.retrieveFLPOfficeMRTBusinessObjectList(stateAbbr);
-
-        // Assert
-        assertNotNull("FLP office list should not be null", flpOfficeList);
-        assertTrue("FLP office list should not be empty", flpOfficeList.size() > 0);
-    }
-
-    @Test
-    public void testRetrieveFLPStateList() throws Exception {
-        // Arrange
-        State state = new State();
-        List<State> mockedStateList = new ArrayList<State>();
-        mockedStateList.add(state);
-        
-        when(mockStateDataServiceProxy.allFlp(FlpStateProperties.code, FlpStateProperties.name,
-                FlpStateProperties.abbreviation, FlpStateProperties.fipsCode, FlpStateProperties.activeId))
-            .thenReturn(mockedStateList);
-
-        // Act
-        List<State> flpStateList = service.retrieveFLPStateList();
-
-        // Assert
-        assertNotNull("FLP state list should not be null", flpStateList);
-        assertTrue("FLP state list should not be empty", flpStateList.size() > 0);
-    }
-
-    @Test
-    public void testRretrieveInterestRateForAssistanceType() throws Exception {
-        // Arrange
-        Calendar date = Calendar.getInstance();
-        date.set(2012, 1, 1);
-        Date cutOffDate = date.getTime();
-        RetrieveInterestRateForAssistanceTypeBC contract = 
-            new RetrieveInterestRateForAssistanceTypeBC(null, "50010", cutOffDate);
-
-        InterestRate rate = new InterestRate();
-        rate.setIntRate(BigDecimal.ONE);
-        when(mockInterestRateDataServiceProxy.byTypeIdAndDate(50010, cutOffDate)).thenReturn(rate);
-
-        // Act
-        double interest = service.retrieveInterestRateForAssistanceType(contract);
-
-        // Assert
-        assertTrue("Interest rate should be greater than 0", 
-                  Double.valueOf(interest).compareTo(Double.valueOf(0.0)) > 0);
-    }
-
-    @Test
-    public void testRetrieveCountyList() throws Exception {
-        // Arrange
-        RetrieveMRTCountyListBC contract = new RetrieveMRTCountyListBC(this.createAgencyToken(), "123");
-
-        List<LocationArea> mockedLocationAreaObject = new ArrayList<LocationArea>();
-        LocationArea object = new LocationArea();
-        object.setStateLocationAreaCode("CD");
-        object.setStateRefId(1);
-        object.setAlternateName("Alt_Name");
-        mockedLocationAreaObject.add(object);
-        
-        when(mockLocationAreaDataServiceProxy.flpByOfficeRefId(123)).thenReturn(mockedLocationAreaObject);
-
-        // Act
-        List<MrtLookUpBO> resultList = service.retrieveCountyList(contract);
-
-        // Assert
-        assertNotNull("Result list should not be null", resultList);
-        assertEquals("Should return one county", 1, resultList.size());
-    }
-
-    @Test
-    public void testRetrieveCountyListWithResult() throws Exception {
-        // Arrange
-        RetrieveMRTCountyListBC contract = new RetrieveMRTCountyListBC(null, "58303");
-        List<LocationArea> emptyList = new ArrayList<LocationArea>();
-        when(mockLocationAreaDataServiceProxy.flpByOfficeRefId(58303)).thenReturn(emptyList);
-
-        // Act
-        List<MrtLookUpBO> resultList = service.retrieveCountyList(contract);
-
-        // Assert
-        assertNotNull("Result list should not be null", resultList);
-        assertEquals("Should return empty list", 0, resultList.size());
-    }
-
-    @Test
-    public void testRetrieveStateList() throws Exception {
-        // Arrange
-        RetrieveMRTStateListBC contract = new RetrieveMRTStateListBC(null);
-
-        List<State> mockedStateList = new ArrayList<State>();
-        State state = new State();
-        state.setCode("69");
-        state.setName("Missouri");
-        state.setAbbreviation("MO");
-        mockedStateList.add(state);
-        
-        when(mockStateDataServiceProxy.allFlp(FlpStateProperties.code, FlpStateProperties.name,
-                FlpStateProperties.abbreviation, FlpStateProperties.fipsCode, FlpStateProperties.activeId))
-            .thenReturn(mockedStateList);
-
-        // Act
-        List<MrtLookUpBO> resultList = service.retrieveStateList(contract);
-        
-        // Assert
-        MrtLookUpBO mrtLookUpBO = resultList.get(0);
-        assertNotNull("Result list should not be null", resultList);
-        assertTrue("Result list should not be empty", resultList.size() > 0);
-        assertNotNull("Code should not be null", mrtLookUpBO.getCode());
-        assertNotNull("Description should not be null", mrtLookUpBO.getDescription());
-        assertNotNull("Reference identifier should not be null", mrtLookUpBO.getRefenceIdentifier());
-        assertNull("Type should be null", mrtLookUpBO.getType());
-    }
-
-    @Test
-    public void testRetrieveServiceCenterList() throws Exception {
-        // Arrange
-        RetrieveMRTServiceCenterListBC contract = new RetrieveMRTServiceCenterListBC(null, "MO");
-
-        List<Office> boList = new ArrayList<Office>();
-        Office bo = new Office();
-        bo.setOfficeCode("Code");
-        bo.setName("Name");
-        bo.setOfficeResp("offRefId");
-        bo.setRefId(12345);
-        boList.add(bo);
-
-        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq("MO"),
-            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
-            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
-            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(boList);
-
-        // Act
-        List<MrtLookUpBO> resultList = service.retrieveServiceCenterList(contract);
-
-        // Assert
-        assertNotNull("Result list should not be null", resultList);
-        assertTrue("Result list should not be empty", resultList.size() > 0);
-    }
-
-    @Test
-    public void testRetrieveServiceCenterListWrongState() throws Exception {
-        // Arrange
-        RetrieveMRTServiceCenterListBC contract = new RetrieveMRTServiceCenterListBC(null, "AA");
-
-        List<Office> boList = new ArrayList<Office>();
-        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq("AA"),
-            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
-            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
-            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(boList);
-
-        // Act
-        List<MrtLookUpBO> resultList = service.retrieveServiceCenterList(contract);
-
-        // Assert
-        assertNotNull("Result list should not be null", resultList);
-        assertTrue("Result list should be empty", resultList.size() == 0);
-    }
-
-    @Test
-    public void testGetFSAStateCountyCodeFromStateLocationAreaFLPCode() throws Exception {
-        // Arrange
-        String office_flp_code_str = "123";
-        Office office = new Office();
-        office.setOfficeCode("123");
-        office.setId(123);
-
-        List<Office> officeList = new ArrayList<Office>();
-        officeList.add(office);
-        
-        String[] flpStringCodesArray = { office_flp_code_str };
-        when(mockOfficeDataServiceProxy.flpOfficesByFlpCodeList(flpStringCodesArray)).thenReturn(officeList);
-
-        // Mock empty FSA office list (no FSA office found for the FLP office)
-        Integer[] flpIdCodesArray = { 123 };
+        Integer[] flpIdCodesArray = { 21047 };
         when(mockOfficeDataServiceProxy.byOfficeIdList(eq(flpIdCodesArray), 
             eq(FsaOfficeProperties.id), eq(FsaOfficeProperties.locStateAbbrev), 
             eq(FsaOfficeProperties.locCityName), eq(FsaOfficeProperties.stateAbbrev), 
@@ -620,10 +454,10 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
             eq(FsaOfficeProperties.cityFipsCode), eq(FsaOfficeProperties.refId), 
             eq(FsaOfficeProperties.siteId), eq(FsaOfficeProperties.mailingZipCode), 
             eq(FsaOfficeProperties.mailingAddrInfoLine), eq(FsaOfficeProperties.mailingAddrLine)))
-            .thenReturn(new ArrayList<Office>());
+            .thenReturn(officeList);
 
         // Act
-        String fsaCode = service.getFSAStateCountyCodeFromStateLocationAreaFLPCode(office_flp_code_str);
+        String fsaCode = service.getFSAStateCountyCodeFromStateLocationAreaFLPCode(flpCode);
 
         // Assert
         assertNotNull("FSA code should not be null", fsaCode);
@@ -946,6 +780,16 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     }
 
     // ===== HELPER METHODS =====
+    
+    private AgencyToken createAgencyToken(){
+        gov.usda.fsa.common.base.AgencyToken token = new AgencyToken();
+        token.setRequestHost("FCAO");
+        token.setApplicationIdentifier("FCAO");
+        token.setUserIdentifier("FCAO");
+        token.setProcessingNode("DLS_Common");
+        token.setReadOnly();
+        return token;
+    }
 
     private List<State> createBasicStateList() {
         List<State> stateList = new ArrayList<State>();
@@ -1003,30 +847,7 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
         
         return officeList;
     }
-}Code);
-        assertEquals("FSA code should be empty when no FSA office found", "", fsaCode);
-    }
-
-    @Test
-    public void testGetFSAStateCountyCodeFromStateLocationAreaFLPCode_withSiteId() throws Exception {
-        // Arrange
-        String flpCode = "21047";
-        String expectedResult = "21047::8247";
-
-        Office office = new Office();
-        office.setOfficeCode("21047");
-        office.setId(21047);
-        office.setSiteId(8247);
-
-        List<Office> officeList = new ArrayList<Office>();
-        officeList.add(office);
-
-        String[] flpStringCodesArray = { flpCode };
-        when(mockOfficeDataServiceProxy.flpOfficesByFlpCodeList(flpStringCodesArray)).thenReturn(officeList);
-
-        Integer[] flpIdCodesArray = { 21047 };
-        when(mockOfficeDataServiceProxy.byOfficeIdList(eq(flpIdCodesArray), 
-            eq(FsaOfficeProperties.id), eq(FsaOfficeProperties.locStateAbbrev), 
+}FsaOfficeProperties.id), eq(FsaOfficeProperties.locStateAbbrev), 
             eq(FsaOfficeProperties.locCityName), eq(FsaOfficeProperties.stateAbbrev), 
             eq(FsaOfficeProperties.officeCode), eq(FsaOfficeProperties.name),
             eq(FsaOfficeProperties.cityFipsCode), eq(FsaOfficeProperties.refId), 
@@ -1035,7 +856,222 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
             .thenReturn(officeList);
 
         // Act
-        String fsaCode = service.getFSAStateCountyCodeFromStateLocationAreaFLPCode(flpCode);
+        List<Office> ofcList = service.retrieveFSAOfficeListByOfficeIdentifierList(flpIdCodes);
 
         // Assert
-        assertNotNull("FSA code should not be null", fsa
+        assertNotNull("Office list should not be null", ofcList);
+        assertTrue("Office list should not be empty", ofcList.size() > 0);
+    }
+
+    @Test
+    public void testRetriveFLPOfficesByOfficeFLPCdMap() throws Exception {
+        // Arrange
+        List<String> flpCodeList = new ArrayList<String>();
+        flpCodeList.add("01305");
+
+        Office office = new Office();
+        office.setOfficeCode("01305");
+        List<Office> officeList = new ArrayList<Office>();
+        officeList.add(office);
+
+        String[] flpStringCodesArray = flpCodeList.toArray(new String[0]);
+        when(mockOfficeDataServiceProxy.flpOfficesByFlpCodeList(flpStringCodesArray)).thenReturn(officeList);
+
+        // Act
+        Map<String, Office> result = service.retriveFLPOfficesByOfficeFLPCdMap(flpCodeList);
+        
+        // Assert
+        Office ofc = result.get("01305");
+        assertNotNull("Office should not be null", ofc);
+    }
+
+    @Test
+    public void testRetrieveFLPOfficeMRTBusinessObjectReadFacadeList() throws Exception {
+        // Arrange
+        String stateAbbr = "MO";
+        Office office = new Office();
+        List<Office> officeList = new ArrayList<Office>();
+        officeList.add(office);
+        
+        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq(stateAbbr),
+            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
+            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
+            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(officeList);
+
+        // Act
+        List<Office> flpOfficeList = service.retrieveFLPOfficeMRTBusinessObjectList(stateAbbr);
+
+        // Assert
+        assertNotNull("FLP office list should not be null", flpOfficeList);
+        assertTrue("FLP office list should not be empty", flpOfficeList.size() > 0);
+    }
+
+    @Test
+    public void testRetrieveFLPStateList() throws Exception {
+        // Arrange
+        State state = new State();
+        List<State> mockedStateList = new ArrayList<State>();
+        mockedStateList.add(state);
+        
+        when(mockStateDataServiceProxy.allFlp(FlpStateProperties.code, FlpStateProperties.name,
+                FlpStateProperties.abbreviation, FlpStateProperties.fipsCode, FlpStateProperties.activeId))
+            .thenReturn(mockedStateList);
+
+        // Act
+        List<State> flpStateList = service.retrieveFLPStateList();
+
+        // Assert
+        assertNotNull("FLP state list should not be null", flpStateList);
+        assertTrue("FLP state list should not be empty", flpStateList.size() > 0);
+    }
+
+    @Test
+    public void testRretrieveInterestRateForAssistanceType() throws Exception {
+        // Arrange
+        Calendar date = Calendar.getInstance();
+        date.set(2012, 1, 1);
+        Date cutOffDate = date.getTime();
+        RetrieveInterestRateForAssistanceTypeBC contract = 
+            new RetrieveInterestRateForAssistanceTypeBC(null, "50010", cutOffDate);
+
+        InterestRate rate = new InterestRate();
+        rate.setIntRate(BigDecimal.ONE);
+        when(mockInterestRateDataServiceProxy.byTypeIdAndDate(50010, cutOffDate)).thenReturn(rate);
+
+        // Act
+        double interest = service.retrieveInterestRateForAssistanceType(contract);
+
+        // Assert
+        assertTrue("Interest rate should be greater than 0", 
+                  Double.valueOf(interest).compareTo(Double.valueOf(0.0)) > 0);
+    }
+
+    @Test
+    public void testRetrieveCountyList() throws Exception {
+        // Arrange
+        RetrieveMRTCountyListBC contract = new RetrieveMRTCountyListBC(this.createAgencyToken(), "123");
+
+        List<LocationArea> mockedLocationAreaObject = new ArrayList<LocationArea>();
+        LocationArea object = new LocationArea();
+        object.setStateLocationAreaCode("CD");
+        object.setStateRefId(1);
+        object.setAlternateName("Alt_Name");
+        mockedLocationAreaObject.add(object);
+        
+        when(mockLocationAreaDataServiceProxy.flpByOfficeRefId(123)).thenReturn(mockedLocationAreaObject);
+
+        // Act
+        List<MrtLookUpBO> resultList = service.retrieveCountyList(contract);
+
+        // Assert
+        assertNotNull("Result list should not be null", resultList);
+        assertEquals("Should return one county", 1, resultList.size());
+    }
+
+    @Test
+    public void testRetrieveCountyListWithResult() throws Exception {
+        // Arrange
+        RetrieveMRTCountyListBC contract = new RetrieveMRTCountyListBC(null, "58303");
+        List<LocationArea> emptyList = new ArrayList<LocationArea>();
+        when(mockLocationAreaDataServiceProxy.flpByOfficeRefId(58303)).thenReturn(emptyList);
+
+        // Act
+        List<MrtLookUpBO> resultList = service.retrieveCountyList(contract);
+
+        // Assert
+        assertNotNull("Result list should not be null", resultList);
+        assertEquals("Should return empty list", 0, resultList.size());
+    }
+
+    @Test
+    public void testRetrieveStateList() throws Exception {
+        // Arrange
+        RetrieveMRTStateListBC contract = new RetrieveMRTStateListBC(null);
+
+        List<State> mockedStateList = new ArrayList<State>();
+        State state = new State();
+        state.setCode("69");
+        state.setName("Missouri");
+        state.setAbbreviation("MO");
+        mockedStateList.add(state);
+        
+        when(mockStateDataServiceProxy.allFlp(FlpStateProperties.code, FlpStateProperties.name,
+                FlpStateProperties.abbreviation, FlpStateProperties.fipsCode, FlpStateProperties.activeId))
+            .thenReturn(mockedStateList);
+
+        // Act
+        List<MrtLookUpBO> resultList = service.retrieveStateList(contract);
+        
+        // Assert
+        MrtLookUpBO mrtLookUpBO = resultList.get(0);
+        assertNotNull("Result list should not be null", resultList);
+        assertTrue("Result list should not be empty", resultList.size() > 0);
+        assertNotNull("Code should not be null", mrtLookUpBO.getCode());
+        assertNotNull("Description should not be null", mrtLookUpBO.getDescription());
+        assertNotNull("Reference identifier should not be null", mrtLookUpBO.getRefenceIdentifier());
+        assertNull("Type should be null", mrtLookUpBO.getType());
+    }
+
+    @Test
+    public void testRetrieveServiceCenterList() throws Exception {
+        // Arrange
+        RetrieveMRTServiceCenterListBC contract = new RetrieveMRTServiceCenterListBC(null, "MO");
+
+        List<Office> boList = new ArrayList<Office>();
+        Office bo = new Office();
+        bo.setOfficeCode("Code");
+        bo.setName("Name");
+        bo.setOfficeResp("offRefId");
+        bo.setRefId(12345);
+        boList.add(bo);
+
+        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq("MO"),
+            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
+            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
+            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(boList);
+
+        // Act
+        List<MrtLookUpBO> resultList = service.retrieveServiceCenterList(contract);
+
+        // Assert
+        assertNotNull("Result list should not be null", resultList);
+        assertTrue("Result list should not be empty", resultList.size() > 0);
+    }
+
+    @Test
+    public void testRetrieveServiceCenterListWrongState() throws Exception {
+        // Arrange
+        RetrieveMRTServiceCenterListBC contract = new RetrieveMRTServiceCenterListBC(null, "AA");
+
+        List<Office> boList = new ArrayList<Office>();
+        when(mockOfficeDataServiceProxy.fsaFlpServiceCenterOfficesByStateAbbr(eq("AA"),
+            eq(FlpOfficeProperties.officeCode), eq(FlpOfficeProperties.name), eq(FlpOfficeProperties.refId),
+            eq(FlpOfficeProperties.cityFipsCode), eq(FlpOfficeProperties.locCityName),
+            eq(FlpOfficeProperties.locStateAbbrev))).thenReturn(boList);
+
+        // Act
+        List<MrtLookUpBO> resultList = service.retrieveServiceCenterList(contract);
+
+        // Assert
+        assertNotNull("Result list should not be null", resultList);
+        assertTrue("Result list should be empty", resultList.size() == 0);
+    }
+
+    @Test
+    public void testGetFSAStateCountyCodeFromStateLocationAreaFLPCode() throws Exception {
+        // Arrange
+        String office_flp_code_str = "123";
+        Office office = new Office();
+        office.setOfficeCode("123");
+        office.setId(123);
+
+        List<Office> officeList = new ArrayList<Office>();
+        officeList.add(office);
+        
+        String[] flpStringCodesArray = { office_flp_code_str };
+        when(mockOfficeDataServiceProxy.flpOfficesByFlpCodeList(flpStringCodesArray)).thenReturn(officeList);
+
+        // Mock empty FSA office list (no FSA office found for the FLP office)
+        Integer[] flpIdCodesArray = { 123 };
+        when(mockOfficeDataServiceProxy.byOfficeIdList(eq(flpIdCodesArray), 
+            eq(
