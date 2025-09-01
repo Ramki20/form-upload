@@ -73,7 +73,7 @@ import gov.usda.fsa.fcao.flp.flpids.common.utilities.StringUtil;
  * @version 1.0
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
+public class MRTProxyBS_UT  {
     
     private IMRTProxyBS service; // Keep as interface
     
@@ -109,7 +109,6 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         
         // Get the Spring-managed service instance
         service = ServiceAgentFacade.getInstance().getMrtProxyBusinessService();
@@ -931,6 +930,17 @@ public class MRTProxyBS_UT extends DLSExternalCommonTestMockBase {
     }
 
     // ===== HELPER METHODS =====
+    
+    
+	private AgencyToken createAgencyToken(){
+		gov.usda.fsa.common.base.AgencyToken token = new AgencyToken();
+		token.setRequestHost("FCAO");
+		token.setApplicationIdentifier("FCAO");
+		token.setUserIdentifier("FCAO");
+		token.setProcessingNode("DLS_Common");
+		token.setReadOnly();
+		return token;
+	}
 
     private List<State> createBasicStateList() {
         List<State> stateList = new ArrayList<State>();
