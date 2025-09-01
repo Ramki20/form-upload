@@ -8,10 +8,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -148,20 +146,7 @@ public class ScimsCustomerBS_UT {
 		
 		return customer;
 	}
-			.thenReturn(mockCustomers);
-		
-		RetrieveScimsCustomersByCoreCustomerIdBC contract = new RetrieveScimsCustomersByCoreCustomerIdBC(
-				testAgencyToken, coreCustomerIds, true);
-
-		// Act
-		List<ScimsCustomerBO> results = scimsCustomerBS.retrieveScimsCustomersByCoreCustomerId(contract);
-		
-		// Assert
-		assertTrue(results.size() == 1);
-		ScimsCustomerBO scimsCustomerBO = results.get(0);
-		assertEquals("1432871", scimsCustomerBO.getCustomerID());
-	}
-	
+				
 	@Test
 	public void testRetrieveScimsCustomersMapByCoreCustomerId_oneId() throws Exception {
 		// Arrange
@@ -362,4 +347,19 @@ public class ScimsCustomerBS_UT {
 		coreCustomerIds.add(customerId);
 		
 		List<ScimsCustomerBO> mockCustomers = createMockScimsCustomerList(customerId, "400352979");
-		when(mockScimsClientProxy.getCustomerByCustomerIds(eq(testAgencyToken), eq(coreCustomerIds)))
+		when(mockScimsClientProxy.getCustomerByCustomerIds(eq(testAgencyToken), eq(coreCustomerIds))).thenReturn(mockCustomers);
+		
+		RetrieveScimsCustomersByCoreCustomerIdBC contract = new RetrieveScimsCustomersByCoreCustomerIdBC(
+				testAgencyToken, coreCustomerIds, true);
+
+		// Act
+		List<ScimsCustomerBO> results = scimsCustomerBS.retrieveScimsCustomersByCoreCustomerId(contract);
+		
+		// Assert
+		assertTrue(results.size() == 1);
+		ScimsCustomerBO scimsCustomerBO = results.get(0);
+		assertEquals("1432871", scimsCustomerBO.getCustomerID());
+	}
+}	
+		
+		
