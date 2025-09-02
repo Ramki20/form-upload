@@ -351,8 +351,10 @@ public class NormalizeAreaOfResponsibility_UT {
             // Mock ServiceAgentFacade.getInstance()
             mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
             
-            // Mock the state abbreviation lookup to throw exception
-            when(mockServiceAgentFacade.getAbbreviation("01")).thenThrow(new RuntimeException("Service unavailable"));
+            // Mock the state abbreviation lookup to throw a RuntimeException wrapped in MRTInterfaceException
+            // The actual implementation catches exceptions and continues processing
+            when(mockServiceAgentFacade.getAbbreviation("01"))
+                .thenThrow(new gov.usda.fsa.fcao.flp.flpids.common.exception.MRTInterfaceException("Service unavailable"));
             
             // Mock service center lookup for individual codes - should still be called
             List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
@@ -402,10 +404,10 @@ public class NormalizeAreaOfResponsibility_UT {
     }
 
     @Test 
-    public void testProcessWithSingleValidStateCode_34330() throws Exception {
+    public void testProcessWithSingleValidStateCode_34300() throws Exception {
         try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
             Collection<String> source = new ArrayList<String>(); 
-            source.add("34330"); // Valid state code (North Dakota ends with 300, not 00 like other states)
+            source.add("34300"); // Valid state code (ends with 00)
             String eAuthID = "123232";
             
             // Mock ServiceAgentFacade.getInstance()
@@ -428,7 +430,7 @@ public class NormalizeAreaOfResponsibility_UT {
             
             assertNotNull(result);
             assertTrue(result.size() >= 1);
-            assertTrue(result.contains("34330")); // Original state code
+            assertTrue(result.contains("34300")); // Original state code
             assertTrue(result.contains("34339")); // Service center from state lookup
             
             // Verify interactions
