@@ -5,20 +5,18 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.spi.InitialContextFactory;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.mockito.MockedStatic;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Hashtable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Spring 6.x compatible base test class replacing SimpleNamingContextBuilder
- * with Mockito-based JNDI mocking for JDK 17
+ * with Mockito-based JNDI mocking for JDK 17 - JUnit 4.12 compatible
  */
 public class DLSExternalCommonTestMockBase extends DLSExternalCommonTestAgency {
     
@@ -26,7 +24,7 @@ public class DLSExternalCommonTestMockBase extends DLSExternalCommonTestAgency {
     protected static Context mockContext;
     protected static Context mockSubContext;
     
-    @BeforeAll
+    @BeforeClass
     public static void jndiSetup() throws Exception {
         // Set up the mock JNDI context factory
         System.setProperty(Context.INITIAL_CONTEXT_FACTORY, MockInitialContextFactory.class.getName());
@@ -67,43 +65,34 @@ public class DLSExternalCommonTestMockBase extends DLSExternalCommonTestAgency {
         when(mockContext.lookup("gov/usda/fsa/fcao/flp/dls/support_create_scims_customer")).thenReturn("Y");
         when(mockContext.lookup("gov/usda/fsa/fcao/flp/dls/support.create.scims.customer")).thenReturn("Y");
         when(mockSubContext.lookup("gov/usda/fsa/fcao/flp/dls/support.create.scims.customer")).thenReturn("Y");
+        
+        // Configure EAS role override support
+        when(mockContext.lookup("java:comp/env/gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn("Y");
+        when(mockContext.lookup("cell/persistent/gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn("Y");
+        when(mockSubContext.lookup("gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn("Y");
     }
     
-    @BeforeEach
+    @Before
     public void setUp() throws Exception {
         test_jndiconfig();
     }
     
     protected void test_jndiconfig() throws Exception {
-        try (MockedStatic<InitialContext> mockedStatic = mockStatic(InitialContext.class)) {
-            InitialContext mockInitialContext = mock(InitialContext.class);
-            mockedStatic.when(() -> new InitialContext()).thenReturn(mockInitialContext);
-            mockedStatic.when(() -> new InitialContext(any(Hashtable.class))).thenReturn(mockInitialContext);
-            
-            // Configure the mock to return our predefined values
-            when(mockInitialContext.lookup("java:comp/env/name_space_root")).thenReturn("cell/persistent");
-            when(mockInitialContext.lookup("cell/persistent")).thenReturn(mockSubContext);
-            when(mockInitialContext.lookup("cell/persistent/gov/usda/fsa/common/frs_service_specifier")).thenReturn("WS");
-            when(mockInitialContext.lookup("java:comp/env/gov/usda/fsa/common/frs_service_specifier")).thenReturn("WS");
-            
-            when(mockSubContext.lookup("gov/usda/fsa/common/frs_service_specifier")).thenReturn("WS");
-            
-            // Test the JNDI configuration
-            InitialContext ctx = new InitialContext();
-            String contextRoot = (String) ctx.lookup("java:comp/env/name_space_root");
-            Context subContext = (Context) ctx.lookup(contextRoot);
-            assertNotNull(subContext);
+        // Use the existing mock context instead of creating new mocked static
+        InitialContext ctx = new InitialContext();
+        String contextRoot = (String) ctx.lookup("java:comp/env/name_space_root");
+        Context subContext = (Context) ctx.lookup(contextRoot);
+        assertNotNull(subContext);
 
-            String value1 = (String) subContext.lookup("gov/usda/fsa/common/frs_service_specifier");
-            String value2 = (String) ctx.lookup("cell/persistent/gov/usda/fsa/common/frs_service_specifier");
-            String value3 = (String) ctx.lookup("java:comp/env/gov/usda/fsa/common/frs_service_specifier");
+        String value1 = (String) subContext.lookup("gov/usda/fsa/common/frs_service_specifier");
+        String value2 = (String) ctx.lookup("cell/persistent/gov/usda/fsa/common/frs_service_specifier");
+        String value3 = (String) ctx.lookup("java:comp/env/gov/usda/fsa/common/frs_service_specifier");
 
-            assertNotNull(value1);
-            assertNotNull(value2);
-            assertNotNull(value3);
-            assertEquals(value1, value2);
-            assertEquals(value2, value3);
-        }
+        assertNotNull(value1);
+        assertNotNull(value2);
+        assertNotNull(value3);
+        assertEquals(value1, value2);
+        assertEquals(value2, value3);
     }
     
     /**
@@ -125,6 +114,27 @@ public class DLSExternalCommonTestMockBase extends DLSExternalCommonTestAgency {
             when(mockContext.lookup("cell/persistent/" + jndiName)).thenReturn(value);
             when(mockContext.lookup("cell/persistent/" + underscoreVersion)).thenReturn(value);
         }
+    }
+    
+    /**
+     * Helper method for child classes to set up test-specific JNDI mocking
+     * This replaces the MockedStatic approach for better compatibility
+     */
+    protected void setupTestSpecificJndiMocks(String supportCreateValue) throws NamingException {
+        // Update the SCIMS customer support value for the specific test
+        when(mockContext.lookup("gov/usda/fsa/fcao/flp/dls/support.create.scims.customer")).thenReturn(supportCreateValue);
+        when(mockContext.lookup("cell/persistent/gov/usda/fsa/fcao/flp/dls/support_create_scims_customer")).thenReturn(supportCreateValue);
+        when(mockContext.lookup("gov/usda/fsa/fcao/flp/dls/support_create_scims_customer")).thenReturn(supportCreateValue);
+        when(mockSubContext.lookup("gov/usda/fsa/fcao/flp/dls/support.create.scims.customer")).thenReturn(supportCreateValue);
+    }
+    
+    /**
+     * Helper method for UserRoleOverrider tests to set up EAS role override mocking
+     */
+    protected void setupEASRoleOverrideMocks(String supportOverrideValue) throws NamingException {
+        when(mockContext.lookup("java:comp/env/gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn(supportOverrideValue);
+        when(mockContext.lookup("cell/persistent/gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn(supportOverrideValue);
+        when(mockSubContext.lookup("gov/usda/fsa/fcao/flp/dls/support_overrideeas_roles")).thenReturn(supportOverrideValue);
     }
     
     // Custom InitialContextFactory for testing - Spring 6.x compatible
