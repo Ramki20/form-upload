@@ -95,12 +95,12 @@ public class NormalizeAreaOfResponsibility_UT {
 
     @Test 
     public void testProcessWithWrongStateCode() throws Exception {
-        Collection<String> source = new ArrayList<String>(); 
-        source.add("99300"); // Invalid state code - but has valid format
-        String eAuthID = "123232";
-        
         try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
-            // Mock ServiceAgentFacade.getInstance()
+            Collection<String> source = new ArrayList<String>(); 
+            source.add("99300"); // Invalid state code - but has valid format
+            String eAuthID = "123232";
+            
+            // Mock ServiceAgentFacade.getInstance() to return our mock
             mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
             
             // Mock the state abbreviation lookup to return null for invalid state
@@ -139,26 +139,31 @@ public class NormalizeAreaOfResponsibility_UT {
 
     @Test 
     public void testProcessWithSingleValidServiceCenterCode() throws Exception {
-        Collection<String> source = new ArrayList<String>(); 
-        source.add("01339"); // Valid service center code (ends with 39, not 00)
-        String eAuthID = "123232";
-        
-        // Mock the service center lookup for individual codes
-        List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
-        ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
-        mockServiceCenters.add(mockServiceCenter);
-        
-        when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
-            .thenReturn(mockServiceCenters);
-        
-        Collection<String> result = tester.process(source, eAuthID);
-        
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertTrue(result.contains("01339"));
-        
-        // Verify interaction with ServiceAgentFacade for service center lookup
-        verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
+            Collection<String> source = new ArrayList<String>(); 
+            source.add("01339"); // Valid service center code (ends with 39, not 00)
+            String eAuthID = "123232";
+            
+            // Mock ServiceAgentFacade.getInstance() to return our mock
+            mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
+            
+            // Mock the service center lookup for individual codes
+            List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
+            ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
+            mockServiceCenters.add(mockServiceCenter);
+            
+            when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
+                .thenReturn(mockServiceCenters);
+            
+            Collection<String> result = tester.process(source, eAuthID);
+            
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertTrue(result.contains("01339"));
+            
+            // Verify interaction with ServiceAgentFacade for service center lookup
+            verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        }
     }
 
     @Test 
@@ -248,38 +253,43 @@ public class NormalizeAreaOfResponsibility_UT {
 
     @Test
     public void testProcessWithSetParameter() throws Exception {
-        Collection<String> source = new ArrayList<String>();
-        source.add("01339"); // Valid service center code
-        String eAuthID = "123232";
-        Set<ServiceCenterFlpOfficeCodeBO> serviceCenterListTarget = new TreeSet<>();
-        
-        // Mock the service center lookup
-        List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
-        ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
-        mockServiceCenters.add(mockServiceCenter);
-        
-        when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
-            .thenReturn(mockServiceCenters);
-        
-        Collection<String> result = tester.process(source, eAuthID, serviceCenterListTarget);
-        
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertTrue(result.contains("01339"));
-        
-        // Verify that the service center was added to the target set
-        assertEquals(1, serviceCenterListTarget.size());
-        // Find the service center in the set and verify it has the correct code
-        boolean foundServiceCenter = false;
-        for (ServiceCenterFlpOfficeCodeBO sc : serviceCenterListTarget) {
-            if ("01339".equals(sc.getCode())) {
-                foundServiceCenter = true;
-                break;
+        try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
+            Collection<String> source = new ArrayList<String>();
+            source.add("01339"); // Valid service center code
+            String eAuthID = "123232";
+            Set<ServiceCenterFlpOfficeCodeBO> serviceCenterListTarget = new TreeSet<>();
+            
+            // Mock ServiceAgentFacade.getInstance()
+            mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
+            
+            // Mock the service center lookup
+            List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
+            ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
+            mockServiceCenters.add(mockServiceCenter);
+            
+            when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
+                .thenReturn(mockServiceCenters);
+            
+            Collection<String> result = tester.process(source, eAuthID, serviceCenterListTarget);
+            
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertTrue(result.contains("01339"));
+            
+            // Verify that the service center was added to the target set
+            assertEquals(1, serviceCenterListTarget.size());
+            // Find the service center in the set and verify it has the correct code
+            boolean foundServiceCenter = false;
+            for (ServiceCenterFlpOfficeCodeBO sc : serviceCenterListTarget) {
+                if ("01339".equals(sc.getCode())) {
+                    foundServiceCenter = true;
+                    break;
+                }
             }
+            assertTrue("Service center should be in the target set", foundServiceCenter);
+            
+            verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
         }
-        assertTrue("Service center should be in the target set", foundServiceCenter);
-        
-        verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
     }
 
     @Test
@@ -305,25 +315,30 @@ public class NormalizeAreaOfResponsibility_UT {
 
     @Test
     public void testProcessWithNullEAuthID() throws Exception {
-        Collection<String> source = new ArrayList<String>();
-        source.add("01339"); // Valid service center code
-        String eAuthID = null; // Null eAuthID should not cause issues
-        
-        // Mock the service center lookup
-        List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
-        ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
-        mockServiceCenters.add(mockServiceCenter);
-        
-        when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
-            .thenReturn(mockServiceCenters);
-        
-        Collection<String> result = tester.process(source, eAuthID);
-        
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertTrue(result.contains("01339"));
-        
-        verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
+            Collection<String> source = new ArrayList<String>();
+            source.add("01339"); // Valid service center code
+            String eAuthID = null; // Null eAuthID should not cause issues
+            
+            // Mock ServiceAgentFacade.getInstance()
+            mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
+            
+            // Mock the service center lookup
+            List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
+            ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("01339", "Test Service Center");
+            mockServiceCenters.add(mockServiceCenter);
+            
+            when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
+                .thenReturn(mockServiceCenters);
+            
+            Collection<String> result = tester.process(source, eAuthID);
+            
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertTrue(result.contains("01339"));
+            
+            verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        }
     }
 
     @Test
@@ -354,6 +369,71 @@ public class NormalizeAreaOfResponsibility_UT {
             
             // Verify the exception was handled gracefully
             verify(mockServiceAgentFacade).getAbbreviation("01");
+            verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        }
+    }
+
+    @Test
+    public void testProcessWithSingleValidSource() throws Exception {
+        try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
+            Collection<String> source = new ArrayList<String>(); 
+            source.add("34339"); // Valid service center code
+            String eAuthID = "123232";
+            
+            // Mock ServiceAgentFacade.getInstance()
+            mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
+            
+            // Mock the service center lookup
+            List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
+            ServiceCenterFlpOfficeCodeBO mockServiceCenter = new ServiceCenterFlpOfficeCodeBO("34339", "Test Service Center");
+            mockServiceCenters.add(mockServiceCenter);
+            
+            when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
+                .thenReturn(mockServiceCenters);
+            
+            Collection<String> result = tester.process(source, eAuthID);
+            
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertTrue(result.contains("34339"));
+            
+            verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
+        }
+    }
+
+    @Test 
+    public void testProcessWithSingleValidStateCode_34330() throws Exception {
+        try (MockedStatic<ServiceAgentFacade> mockedStatic = mockStatic(ServiceAgentFacade.class)) {
+            Collection<String> source = new ArrayList<String>(); 
+            source.add("34330"); // Valid state code (North Dakota ends with 300, not 00 like other states)
+            String eAuthID = "123232";
+            
+            // Mock ServiceAgentFacade.getInstance()
+            mockedStatic.when(ServiceAgentFacade::getInstance).thenReturn(mockServiceAgentFacade);
+            
+            // Mock the state abbreviation lookup
+            when(mockServiceAgentFacade.getAbbreviation("34")).thenReturn("ND");
+            
+            // Mock service center lookup for the state
+            List<ServiceCenterFlpOfficeCodeBO> mockServiceCenters = new ArrayList<>();
+            ServiceCenterFlpOfficeCodeBO mockServiceCenter1 = new ServiceCenterFlpOfficeCodeBO("34339", "North Dakota Service Center 1");
+            mockServiceCenters.add(mockServiceCenter1);
+            
+            when(mockServiceAgentFacade.retrieveServiceCenterFLPCodesByStateAbbr("ND"))
+                .thenReturn(mockServiceCenters);
+            when(mockServiceAgentFacade.retrieveFlpServiceCentersByFlpOfficeCode(anyList()))
+                .thenReturn(mockServiceCenters);
+            
+            Collection<String> result = tester.process(source, eAuthID);
+            
+            assertNotNull(result);
+            assertTrue(result.size() >= 1);
+            assertTrue(result.contains("34330")); // Original state code
+            assertTrue(result.contains("34339")); // Service center from state lookup
+            
+            // Verify interactions
+            verify(mockServiceAgentFacade).getAbbreviation("34");
+            verify(mockServiceAgentFacade).retrieveServiceCenterFLPCodesByStateAbbr("ND");
             verify(mockServiceAgentFacade).retrieveFlpServiceCentersByFlpOfficeCode(anyList());
         }
     }
