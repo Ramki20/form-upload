@@ -184,7 +184,8 @@ public class HibernateHqlAndCriteriaToSqlTranslator_UT {
 			String result = translator.toSql(hql);
 			fail("Expected RuntimeException due to null SessionFactory");
 		} catch (RuntimeException e) {
-			assertTrue("Exception should indicate error in SQL extraction", 
+			assertTrue("Exception should indicate SessionFactory not set", 
+					   e.getMessage().contains("SessionFactory is not set") ||
 					   e.getMessage().contains("Error extracting SQL from HQL"));
 		}
 	}
