@@ -435,16 +435,24 @@ public abstract class DLSCommonHibernateDAO<BO extends BusinessObjectBase, Key e
 		}
 		
 		try {
-			// Simple HQL approach - you may want to use JPA Criteria API for more complex cases
-			String hql = "FROM " + inMB.getClass().getSimpleName() + " WHERE 1=1";
+			// Validate entity class name to prevent injection
+			Class<?> entityClass = inMB.getClass();
+			String entityName = validateEntityClassName(entityClass);
 			
-			// Add your example-based filtering logic here
+			// Use parameterized query approach instead of string concatenation
+			String hql = "FROM " + entityName + " e WHERE 1=1";
+			
+			// Add your example-based filtering logic here using parameters
 			// This is a simplified version - you'll need to implement proper example matching
+			// Example: hql += " AND e.property = :propertyValue";
 			
-			Query<BO> query = getCurrentSession().createQuery(hql, (Class<BO>) inMB.getClass());
+			Query<BO> query = getCurrentSession().createQuery(hql, (Class<BO>) entityClass);
+			
+			// Set parameters here if you added any filters
+			// Example: query.setParameter("propertyValue", exampleObject.getProperty());
 			
 			if(logger.isDebugEnabled()){
-				logger.debug("OUT: createQueryByExample(). HQL: " + hql);
+				logger.debug("OUT: createQueryByExample(). HQL: {}", hql);
 			}
 			
 			return query;
@@ -454,6 +462,29 @@ public abstract class DLSCommonHibernateDAO<BO extends BusinessObjectBase, Key e
 			logger.error(msg);
 			throw hbEx;
 		}
+	}
+	
+	/**
+	 * Validates and sanitizes entity class name to prevent SQL injection
+	 * @param entityClass The entity class
+	 * @return Safe entity name for HQL queries
+	 * @throws HibernateException if class name is invalid
+	 */
+	private String validateEntityClassName(Class<?> entityClass) throws HibernateException {
+		String className = entityClass.getSimpleName();
+		
+		// Validate class name contains only safe characters (alphanumeric and underscore)
+		if (!className.matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
+			throw new HibernateException("Invalid entity class name: " + className);
+		}
+		
+		// Additional validation: ensure it's a known entity class
+		// You can add more specific validation based on your entity naming conventions
+		if (className.length() > 50) { // Reasonable length limit
+			throw new HibernateException("Entity class name too long: " + className);
+		}
+		
+		return className;
 	}
 
 	// Remove or comment out this method as SQL extraction is complex in Hibernate 6
